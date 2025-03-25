@@ -23,7 +23,16 @@ SKILL_PROBABILITY_COLUMN = "probability"
 TIME_SLICE_ALL = "all"
 
 
-def _df_hash(df: pd.DataFrame) -> str:
+def _df_hash(df: pd.DataFrame, identifiers: list[Identifier]) -> str:
+    # Add the known columns
+    columns = []
+    for identifier in identifiers:
+        columns.append(identifier.column)
+        if identifier.points_column:
+            columns.append(identifier.points_column)
+        if identifier.team_identifier_column:
+            columns.append(identifier.team_identifier_column)
+    df = df[columns]
     # Remove all empty columns
     df = df.dropna(how="all", axis=1)
     # Determine hash by the CSV encoding of the dataframe
@@ -311,7 +320,7 @@ def skill_process(
         nonlocal team_identifiers
         nonlocal player_identifiers
 
-        df_hash = _df_hash(group)
+        df_hash = _df_hash(group, team_identifiers + player_identifiers)
         df_cache_file = os.path.join(
             sportsfeatures_cache_folder(), f"{df_hash}.parquet.gzip"
         )
