@@ -32,7 +32,7 @@ def _df_hash(df: pd.DataFrame, identifiers: list[Identifier]) -> str:
             columns.append(identifier.points_column)
         if identifier.team_identifier_column:
             columns.append(identifier.team_identifier_column)
-    df = df[columns]
+    df = df[sorted(columns)]
     # Remove all empty columns
     df = df.dropna(how="all", axis=1)
     # Determine hash by the CSV encoding of the dataframe
