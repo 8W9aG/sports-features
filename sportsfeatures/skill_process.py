@@ -6,6 +6,7 @@ import datetime
 
 import pandas as pd
 from pandarallel import pandarallel  # type: ignore
+from tqdm import tqdm
 
 from .columns import DELIMITER
 from .entity_type import EntityType
@@ -28,6 +29,8 @@ def skill_process(
 ) -> pd.DataFrame:
     """Add skill features to the dataframe."""
     pandarallel.initialize(progress_bar=True)
+    tqdm.pandas(desc="Skill Features")
+
     team_identifiers = [x for x in identifiers if x.entity_type == EntityType.TEAM]
     player_identifiers = [x for x in identifiers if x.entity_type == EntityType.PLAYER]
     rating_windows = [WindowedRating(x, dt_column) for x in windows]
@@ -95,4 +98,4 @@ def skill_process(
 
         return row
 
-    return df.apply(calculate_skills, axis=1)
+    return df.progress_apply(calculate_skills, axis=1)  # type: ignore
