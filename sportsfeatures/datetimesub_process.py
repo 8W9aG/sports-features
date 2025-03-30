@@ -9,7 +9,7 @@ def datetimesub_process(df: pd.DataFrame, dt_column: str) -> pd.DataFrame:
     columns = (
         df.drop(columns=[dt_column])
         .select_dtypes(include=["datetime64"])
-        .columns.values
+        .columns.values.tolist()
     )
     if columns:
         dts = DatetimeSubtraction(variables=columns, reference=[dt_column])  # type: ignore

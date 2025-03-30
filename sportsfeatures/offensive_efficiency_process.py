@@ -1,6 +1,7 @@
 """A process function for determing offensive efficiency of entities."""
 
 import pandas as pd
+from tqdm import tqdm
 
 from .columns import DELIMITER
 from .identifier import Identifier
@@ -12,6 +13,7 @@ def offensive_efficiency_process(
     df: pd.DataFrame, identifiers: list[Identifier]
 ) -> pd.DataFrame:
     """Process a dataframe for offensive efficiency."""
+    tqdm.pandas(desc="Offensive Efficiency Features")
 
     def record_offensive_efficiency(row: pd.Series) -> pd.Series:
         nonlocal identifiers

@@ -5,7 +5,6 @@
 import datetime
 
 import pandas as pd
-from pandarallel import pandarallel  # type: ignore
 from tqdm import tqdm
 
 from .columns import DELIMITER
@@ -28,7 +27,6 @@ def skill_process(
     windows: list[datetime.timedelta | None],
 ) -> pd.DataFrame:
     """Add skill features to the dataframe."""
-    pandarallel.initialize(progress_bar=True)
     tqdm.pandas(desc="Skill Features")
 
     team_identifiers = [x for x in identifiers if x.entity_type == EntityType.TEAM]

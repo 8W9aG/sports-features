@@ -1,6 +1,6 @@
 """A class for handling windowed plackett luce ratings."""
 
-# pylint: disable=too-many-locals,too-many-branches,too-many-statements,too-few-public-methods
+# pylint: disable=too-many-locals,too-many-branches,too-many-statements,too-few-public-methods,too-many-nested-blocks
 
 import datetime
 
@@ -84,74 +84,91 @@ class WindowedRating:
             # Remove older matches and reverse their results.
             oldest_dt = match.dt - self.window
             remove_matches = [x for x in self._matches if x.dt < oldest_dt]
-            for match in remove_matches:
+            for remove_match in remove_matches:
                 scores: list[float] | None = [
-                    x.points for x in reversed(match.teams) if x.points is not None
+                    x.points
+                    for x in reversed(remove_match.teams)
+                    if x.points is not None
                 ]
                 if not scores:
                     scores = None
-                team_ratings: list[list[PlackettLuceRating]] = [
-                    [self._team_ratings[x.identifier]] for x in match.teams
-                ]
-                team_ratings = self._team_model.rate(
-                    team_ratings,
-                    scores=scores,
-                )
-                for team_rating in team_ratings:
-                    self._team_ratings[str(team_rating[0].name)] = team_rating[0]
-                players = self._player_model.rate(
-                    [[self._player_ratings[y] for y in x.players] for x in match.teams],
-                    scores=scores,
-                )
-                for player_rating in players:
-                    for player_subrating in player_rating:
-                        self._player_ratings[str(player_subrating.name)] = (
-                            player_subrating
+                if len(remove_match.teams) >= 2:
+                    team_ratings: list[list[PlackettLuceRating]] = [
+                        [self._team_ratings[x.identifier]] for x in remove_match.teams
+                    ]
+                    team_ratings = self._team_model.rate(
+                        team_ratings,
+                        scores=scores,
+                    )
+                    for team_rating in team_ratings:
+                        self._team_ratings[str(team_rating[0].name)] = team_rating[0]
+                    if all(x.players for x in remove_match.teams):
+                        players = self._player_model.rate(
+                            [
+                                [self._player_ratings[y] for y in x.players]
+                                for x in remove_match.teams
+                            ],
+                            scores=scores,
                         )
+                        for player_rating in players:
+                            for player_subrating in player_rating:
+                                self._player_ratings[str(player_subrating.name)] = (
+                                    player_subrating
+                                )
             self._matches = self._matches[len(remove_matches) :]
 
         # Find the results
-        team_rank = self._team_model.predict_rank(
-            [[self._team_ratings[x.identifier]] for x in match.teams]
-        )
-        team_result = {
-            x.identifier: (
-                self._team_ratings[x.identifier],
-                team_rank[count][0],
-                team_rank[count][1],
-            )
-            for count, x in enumerate(match.teams)
-        }
+        team_result = {}
         player_result = {}
-        if all(x.players for x in match.teams):
-            player_rank = self._player_model.predict_rank(
-                [[self._player_ratings[y] for y in x.players] for x in match.teams]
+        if len(match.teams) >= 2:
+            team_rank = self._team_model.predict_rank(
+                [[self._team_ratings[x.identifier]] for x in match.teams]
             )
-            for count, team in enumerate(match.teams):
-                for player in team.players:
-                    player_result[player] = (
-                        self._player_ratings[player],
-                        player_rank[count][0],
-                        player_rank[count][1],
-                    )
+            team_result = {
+                x.identifier: (
+                    self._team_ratings[x.identifier],
+                    team_rank[count][0],
+                    team_rank[count][1],
+                )
+                for count, x in enumerate(match.teams)
+            }
+            if all(x.players for x in match.teams):
+                player_rank = self._player_model.predict_rank(
+                    [[self._player_ratings[y] for y in x.players] for x in match.teams]
+                )
+                for count, team in enumerate(match.teams):
+                    for player in team.players:
+                        player_result[player] = (
+                            self._player_ratings[player],
+                            player_rank[count][0],
+                            player_rank[count][1],
+                        )
 
         # Record the new match results
         scores = [x.points for x in match.teams if x.points is not None]
         if not scores:
             scores = None
-        team_ratings = self._team_model.rate(
-            [[self._team_ratings[x.identifier]] for x in match.teams], scores=scores
-        )
-        for team_rating in team_ratings:
-            self._team_ratings[str(team_rating[0])] = team_rating[0]
-        if all(x.players for x in match.teams):
-            player_ratings: list[list[PlackettLuceRating]] = self._player_model.rate(
-                [[self._player_ratings[y] for y in x.players] for x in match.teams],
-                scores=scores,
+        if len(match.teams) >= 2:
+            team_ratings = self._team_model.rate(
+                [[self._team_ratings[x.identifier]] for x in match.teams], scores=scores
             )
-            for player_rating in player_ratings:
-                for player_subrating in player_rating:
-                    self._player_ratings[str(player_subrating.name)] = player_subrating
+            for team_rating in team_ratings:
+                self._team_ratings[str(team_rating[0])] = team_rating[0]
+            if all(x.players for x in match.teams):
+                player_ratings: list[list[PlackettLuceRating]] = (
+                    self._player_model.rate(
+                        [
+                            [self._player_ratings[y] for y in x.players]
+                            for x in match.teams
+                        ],
+                        scores=scores,
+                    )
+                )
+                for player_rating in player_ratings:
+                    for player_subrating in player_rating:
+                        self._player_ratings[str(player_subrating.name)] = (
+                            player_subrating
+                        )
         self._matches.append(match)
 
         return team_result, player_result
