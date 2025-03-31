@@ -21,5 +21,9 @@ def datetimesub_process(df: pd.DataFrame, dt_column: str) -> pd.DataFrame:
                 dts = DatetimeSubtraction(variables=[column], reference=[dt_column])  # type: ignore
                 df = dts.fit_transform(df)
             except TypeError as exc:
-                logging.warning(str(exc))
+                logging.warning(
+                    "Couldn't use datetime subtraction on column %s: %s",
+                    column,
+                    str(exc),
+                )
     return df

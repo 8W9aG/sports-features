@@ -57,7 +57,7 @@ def _process_identifier_ts(
         original_identifier_df = identifier_df.copy()
         drop_columns = original_identifier_df.columns.values
         cf = CyclicalFeatures()
-        identifier_df = cf.fit_transform(identifier_df)
+        identifier_df = cf.fit_transform(identifier_df.fillna(0.0))
         for window in windows + [1, 2, 4, 8]:
             if isinstance(window, int):
                 lag_df = (

@@ -106,3 +106,21 @@ class TestTimeseriesProcess(unittest.TestCase):
         test_df["/kicks_lag_4"] = test_df["/kicks_lag_4"].astype(float)
         test_df["/kicks_lag_8"] = test_df["/kicks_lag_8"].astype(float)
         assert_frame_equal(identifier_ts["team_0"], test_df)
+
+    def test_nan_in_timeseries_process(self):
+        dt_column = "dt"
+        identifier_ts = {
+            "team_0": pd.DataFrame(data={
+                "/kicks": [10.0, 20.0, 30.0, None, None, 40.0],
+                dt_column: [
+                    datetime.datetime(2022, 1, 1),
+                    datetime.datetime(2022, 1, 2),
+                    datetime.datetime(2022, 1, 3),
+                    datetime.datetime(2022, 1, 4),
+                    datetime.datetime(2022, 1, 5),
+                    datetime.datetime(2022, 1, 6),
+                ],
+            })
+        }
+        identifier_ts = _process_identifier_ts(identifier_ts, [datetime.timedelta(days=20), None], dt_column)
+        print(identifier_ts)
