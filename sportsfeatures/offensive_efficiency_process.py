@@ -46,4 +46,4 @@ def offensive_efficiency_process(
                 identifier.feature_columns.append(offensive_efficiency_column)
         return row
 
-    return df.apply(record_offensive_efficiency, axis=1)
+    return df.progress_apply(record_offensive_efficiency, axis=1)  # type: ignore

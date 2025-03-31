@@ -13,7 +13,7 @@ from .identifier import Identifier
 def _extract_identifier_timeseries(
     df: pd.DataFrame, identifiers: list[Identifier], dt_column: str
 ) -> dict[str, pd.DataFrame]:
-    tqdm.pandas(desc="Progress")
+    tqdm.pandas(desc="Timeseries Progress")
     identifier_ts: dict[str, pd.DataFrame] = {}
 
     def record_timeseries_features(row: pd.Series) -> pd.Series:
