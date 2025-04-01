@@ -1,6 +1,7 @@
 """Processing for time series features."""
 
 import datetime
+import logging
 
 import pandas as pd
 from feature_engine.creation import CyclicalFeatures
@@ -57,7 +58,15 @@ def _process_identifier_ts(
         original_identifier_df = identifier_df.copy()
         drop_columns = original_identifier_df.columns.values
         cf = CyclicalFeatures()
-        identifier_df = cf.fit_transform(identifier_df.fillna(0.0))
+        try:
+            identifier_df = cf.fit_transform(identifier_df.fillna(0.0))
+        except TypeError as exc:
+            logging.warning(
+                "Failed to fit cyclical transforms for identifier %s: %s",
+                identifier_id,
+                str(exc),
+            )
+            continue
         for window in windows + [1, 2, 4, 8]:
             if isinstance(window, int):
                 lag_df = (

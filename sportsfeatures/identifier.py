@@ -33,3 +33,25 @@ class Identifier:
         self.field_goals_attempted_column = field_goals_attempted_column
         self.offensive_rebounds_column = offensive_rebounds_column
         self.turnovers_column = turnovers_column
+
+    @property
+    def columns(self) -> list[str]:
+        """The columns recognised by the identifier."""
+        columns = {self.column}
+        for feature_column in self.feature_columns:
+            columns.add(feature_column)
+        if self.points_column is not None:
+            columns.add(self.points_column)
+        if self.team_identifier_column is not None:
+            columns.add(self.team_identifier_column)
+        if self.field_goals_column is not None:
+            columns.add(self.field_goals_column)
+        if self.assists_column is not None:
+            columns.add(self.assists_column)
+        if self.field_goals_attempted_column is not None:
+            columns.add(self.field_goals_attempted_column)
+        if self.offensive_rebounds_column is not None:
+            columns.add(self.offensive_rebounds_column)
+        if self.turnovers_column is not None:
+            columns.add(self.turnovers_column)
+        return list(columns)

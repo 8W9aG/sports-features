@@ -22,7 +22,7 @@ def process(
     """Process the dataframe for sports features."""
     df = skill_process(df, dt_column, identifiers, windows)
     df = offensive_efficiency_process(df, identifiers)
-    df = datetimesub_process(df, dt_column)
+    df = datetimesub_process(df, dt_column, identifiers)
     df = timeseries_process(df, identifiers, windows, dt_column)
     df = datetime_process(df)
     df = remove_process(df, identifiers)

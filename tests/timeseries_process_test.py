@@ -124,3 +124,21 @@ class TestTimeseriesProcess(unittest.TestCase):
         }
         identifier_ts = _process_identifier_ts(identifier_ts, [datetime.timedelta(days=20), None], dt_column)
         print(identifier_ts)
+
+    def test_all_nan_in_timeseries_process(self):
+        dt_column = "dt"
+        identifier_ts = {
+            "team_0": pd.DataFrame(data={
+                "/kicks": ["all", "all", "all", "all", "all", "all"],
+                dt_column: [
+                    datetime.datetime(2022, 1, 1),
+                    datetime.datetime(2022, 1, 2),
+                    datetime.datetime(2022, 1, 3),
+                    datetime.datetime(2022, 1, 4),
+                    datetime.datetime(2022, 1, 5),
+                    datetime.datetime(2022, 1, 6),
+                ],
+            })
+        }
+        identifier_ts = _process_identifier_ts(identifier_ts, [datetime.timedelta(days=20), None], dt_column)
+        print(identifier_ts)
