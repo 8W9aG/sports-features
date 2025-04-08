@@ -1,5 +1,7 @@
 """Processing for time series features."""
 
+# pylint: disable=duplicate-code
+
 import datetime
 import logging
 
@@ -8,6 +10,7 @@ from feature_engine.creation import CyclicalFeatures
 from tqdm import tqdm
 
 from .columns import DELIMITER
+from .entity_type import EntityType
 from .identifier import Identifier
 
 
@@ -16,11 +19,15 @@ def _extract_identifier_timeseries(
 ) -> dict[str, pd.DataFrame]:
     tqdm.pandas(desc="Timeseries Progress")
     identifier_ts: dict[str, pd.DataFrame] = {}
+    team_identifiers = [x for x in identifiers if x.entity_type == EntityType.TEAM]
+    player_identifiers = [x for x in identifiers if x.entity_type == EntityType.PLAYER]
+    relevant_identifiers = team_identifiers + player_identifiers
 
     def record_timeseries_features(row: pd.Series) -> pd.Series:
         nonlocal identifier_ts
+        nonlocal relevant_identifiers
 
-        for identifier in identifiers:
+        for identifier in relevant_identifiers:
             if identifier.column not in row:
                 continue
             identifier_id = row[identifier.column]

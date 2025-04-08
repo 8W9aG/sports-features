@@ -7,6 +7,7 @@ import pandas as pd
 from .datetime_process import datetime_process
 from .datetimesub_process import datetimesub_process
 from .identifier import Identifier
+from .margin_process import margin_process
 from .offensive_efficiency_process import offensive_efficiency_process
 from .remove_process import remove_process
 from .skill_process import skill_process
@@ -22,6 +23,7 @@ def process(
     """Process the dataframe for sports features."""
     df = skill_process(df, dt_column, identifiers, windows)
     df = offensive_efficiency_process(df, identifiers)
+    df = margin_process(df, identifiers)
     df = datetimesub_process(df, dt_column, identifiers)
     df = timeseries_process(df, identifiers, windows, dt_column)
     df = datetime_process(df)
