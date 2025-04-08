@@ -7,6 +7,7 @@ import logging
 
 import pandas as pd
 from feature_engine.creation import CyclicalFeatures
+from pandarallel import pandarallel  # type: ignore
 from tqdm import tqdm
 
 from .columns import DELIMITER
@@ -150,7 +151,7 @@ def _write_ts_features(
 
         return row
 
-    return df.progress_apply(write_timeseries_features, axis=1)  # type: ignore
+    return df.parallel_apply(write_timeseries_features, axis=1)  # type: ignore
 
 
 def timeseries_process(
@@ -161,6 +162,7 @@ def timeseries_process(
 ) -> pd.DataFrame:
     """Process a dataframe for its timeseries features."""
     # pylint: disable=too-many-locals,consider-using-dict-items,too-many-statements,duplicate-code
+    pandarallel.initialize(progress_bar=True)
     tqdm.pandas(desc="Progress")
     identifier_ts: dict[str, pd.DataFrame] = _extract_identifier_timeseries(
         df, identifiers, dt_column
