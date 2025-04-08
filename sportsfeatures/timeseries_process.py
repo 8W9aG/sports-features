@@ -3,6 +3,7 @@
 # pylint: disable=duplicate-code
 
 import datetime
+import functools
 import logging
 
 import pandas as pd
@@ -131,10 +132,11 @@ def _write_ts_features(
     identifier_ts: dict[str, pd.DataFrame],
     identifiers: list[Identifier],
 ) -> pd.DataFrame:
-    def write_timeseries_features(row: pd.Series) -> pd.Series:
-        nonlocal identifier_ts
-        nonlocal identifiers
-
+    def write_timeseries_features(
+        row: pd.Series,
+        identifier_ts: dict[str, pd.DataFrame],
+        identifiers: list[Identifier],
+    ) -> pd.Series:
         for identifier in identifiers:
             if identifier.column not in row:
                 continue
@@ -142,6 +144,8 @@ def _write_ts_features(
             if pd.isnull(identifier_id):
                 continue
             key = DELIMITER.join([identifier.entity_type, identifier_id])
+            if key not in identifier_ts:
+                continue
             identifier_df = identifier_ts[key]
             identifier_row = identifier_df.iloc[0]
             for column in identifier_df.columns.values:
@@ -151,7 +155,14 @@ def _write_ts_features(
 
         return row
 
-    return df.parallel_apply(write_timeseries_features, axis=1)  # type: ignore
+    return df.parallel_apply(
+        functools.partial(
+            write_timeseries_features,
+            identifier_ts=identifier_ts,
+            identifiers=identifiers,
+        ),
+        axis=1,
+    )  # type: ignore
 
 
 def timeseries_process(
