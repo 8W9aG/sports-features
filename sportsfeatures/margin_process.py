@@ -81,7 +81,9 @@ def margin_process(df: pd.DataFrame, identifiers: list[Identifier]) -> pd.DataFr
                             [column, "margin", "relative"]
                         )
                         identifier_ts_cols[margin_relative_column] = (
-                            value / max_dict[column]
+                            0.0
+                            if max_dict[column] == 0.0
+                            else (value / max_dict[column])
                         )
                     identifiers_ts[identifier_id] = identifier_ts_cols
                     break
