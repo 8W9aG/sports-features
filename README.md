@@ -15,6 +15,7 @@ Python 3.11.6:
 - [feature-engine](https://feature-engine.trainindata.com/en/latest/)
 - [pandarallel](https://nalepae.github.io/pandarallel/)
 - [tqdm](https://github.com/tqdm/tqdm)
+- [scikit-learn](https://scikit-learn.org/)
 
 ## Raison D'être :thought_balloon:
 

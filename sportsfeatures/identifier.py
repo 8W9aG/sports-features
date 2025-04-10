@@ -1,5 +1,6 @@
 """A description of player representation in the dataframe."""
 
+from .bet import Bet
 from .entity_type import EntityType
 
 
@@ -21,6 +22,7 @@ class Identifier:
         field_goals_attempted_column: str | None = None,
         offensive_rebounds_column: str | None = None,
         turnovers_column: str | None = None,
+        bets: list[Bet] | None = None,
     ):
         self.entity_type = entity_type
         self.column = column
@@ -33,6 +35,7 @@ class Identifier:
         self.field_goals_attempted_column = field_goals_attempted_column
         self.offensive_rebounds_column = offensive_rebounds_column
         self.turnovers_column = turnovers_column
+        self.bets = bets if bets is not None else []
 
     @property
     def columns(self) -> list[str]:
