@@ -7,7 +7,6 @@ import functools
 import logging
 
 import pandas as pd
-from feature_engine.creation import CyclicalFeatures
 from pandarallel import pandarallel  # type: ignore
 from tqdm import tqdm
 
@@ -66,16 +65,6 @@ def _process_identifier_ts(
         identifier_df = identifier_ts[identifier_id]
         original_identifier_df = identifier_df.copy()
         drop_columns = original_identifier_df.columns.values
-        cf = CyclicalFeatures()
-        try:
-            identifier_df = cf.fit_transform(identifier_df.fillna(0.0))
-        except TypeError as exc:
-            logging.warning(
-                "Failed to fit cyclical transforms for identifier %s: %s",
-                identifier_id,
-                str(exc),
-            )
-            continue
         for window in windows + [1, 2, 4, 8]:
             if isinstance(window, int):
                 lag_df = (
@@ -110,18 +99,21 @@ def _process_identifier_ts(
                     kurt_column = DELIMITER.join([column, "kurt", window_col])  # type: ignore
                     sem_column = DELIMITER.join([column, "sem", window_col])  # type: ignore
                     rank_column = DELIMITER.join([column, "rank", window_col])  # type: ignore
-                    identifier_df[count_column] = window_df[column].count()
-                    identifier_df[sum_column] = window_df[column].sum()
-                    identifier_df[mean_column] = window_df[column].mean()
-                    identifier_df[median_column] = window_df[column].median()
-                    identifier_df[var_column] = window_df[column].var()
-                    identifier_df[std_column] = window_df[column].std()
-                    identifier_df[min_column] = window_df[column].min()
-                    identifier_df[max_column] = window_df[column].max()
-                    identifier_df[skew_column] = window_df[column].skew()
-                    identifier_df[kurt_column] = window_df[column].kurt()
-                    identifier_df[sem_column] = window_df[column].sem()
-                    identifier_df[rank_column] = window_df[column].rank()
+                    try:
+                        identifier_df[count_column] = window_df[column].count()
+                        identifier_df[sum_column] = window_df[column].sum()
+                        identifier_df[mean_column] = window_df[column].mean()
+                        identifier_df[median_column] = window_df[column].median()
+                        identifier_df[var_column] = window_df[column].var()
+                        identifier_df[std_column] = window_df[column].std()
+                        identifier_df[min_column] = window_df[column].min()
+                        identifier_df[max_column] = window_df[column].max()
+                        identifier_df[skew_column] = window_df[column].skew()
+                        identifier_df[kurt_column] = window_df[column].kurt()
+                        identifier_df[sem_column] = window_df[column].sem()
+                        identifier_df[rank_column] = window_df[column].rank()
+                    except pd.errors.DataError as exc:
+                        logging.warning(str(exc))
         identifier_ts[identifier_id] = identifier_df.shift(1).drop(columns=drop_columns)
 
     return identifier_ts

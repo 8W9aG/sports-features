@@ -106,7 +106,8 @@ class TestProcess(unittest.TestCase):
                     ),
                 ]
                 df = process(df, dt_column, identifiers, [datetime.timedelta(days=365), None])
-                print(df)
+                with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+                    print(df)
                 print(df.columns.values)
         finally:
             os.chdir(current_dir)

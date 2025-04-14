@@ -68,8 +68,6 @@ class TestTimeseriesProcess(unittest.TestCase):
         }
         identifier_ts = _process_identifier_ts(identifier_ts, [datetime.timedelta(days=20), None], dt_column)
         test_df = pd.DataFrame(data={
-            "/kicks_sin": [None, 0.8660254037844387, -0.8660254037844384],
-            "/kicks_cos": [None, -0.49999999999999983, -0.5000000000000004],
             "/kicks_count_20days": [None, 1.0, 2.0],
             "/kicks_sum_20days": [None, 10.0, 30.0],
             "/kicks_mean_20days": [None, 10.0, 15.0],
