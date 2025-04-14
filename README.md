@@ -16,6 +16,7 @@ Python 3.11.6:
 - [pandarallel](https://nalepae.github.io/pandarallel/)
 - [tqdm](https://github.com/tqdm/tqdm)
 - [scikit-learn](https://scikit-learn.org/)
+- [geopy](https://geopy.readthedocs.io/en/stable/)
 
 ## Raison D'être :thought_balloon:
 

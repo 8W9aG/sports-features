@@ -7,6 +7,7 @@ import pandas as pd
 from .bets_process import bet_process
 from .datetime_process import datetime_process
 from .datetimesub_process import datetimesub_process
+from .distance_process import distance_process
 from .identifier import Identifier
 from .margin_process import margin_process
 from .offensive_efficiency_process import offensive_efficiency_process
@@ -29,5 +30,6 @@ def process(
     df = datetimesub_process(df, dt_column, identifiers)
     df = timeseries_process(df, identifiers, windows, dt_column)
     df = datetime_process(df)
+    df = distance_process(df, identifiers)
     df = remove_process(df, identifiers)
     return df

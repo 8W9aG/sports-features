@@ -23,6 +23,8 @@ class Identifier:
         offensive_rebounds_column: str | None = None,
         turnovers_column: str | None = None,
         bets: list[Bet] | None = None,
+        latitude_column: str | None = None,
+        longitude_column: str | None = None,
     ):
         self.entity_type = entity_type
         self.column = column
@@ -36,6 +38,8 @@ class Identifier:
         self.offensive_rebounds_column = offensive_rebounds_column
         self.turnovers_column = turnovers_column
         self.bets = bets if bets is not None else []
+        self.latitude_column = latitude_column
+        self.longitude_column = longitude_column
 
     @property
     def columns(self) -> list[str]:
@@ -57,4 +61,8 @@ class Identifier:
             columns.add(self.offensive_rebounds_column)
         if self.turnovers_column is not None:
             columns.add(self.turnovers_column)
+        if self.latitude_column is not None:
+            columns.add(self.latitude_column)
+        if self.longitude_column is not None:
+            columns.add(self.longitude_column)
         return list(columns)
