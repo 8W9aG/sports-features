@@ -49,7 +49,11 @@ def bet_process(
                 if bet.odds_column not in row or bet.bookie_id_column not in row:
                     continue
                 odds = row[bet.odds_column]
+                if pd.isnull(odds):
+                    continue
                 bookie_id = row[bet.bookie_id_column]
+                if pd.isnull(bookie_id):
+                    continue
                 if bet.dt_column is None or bet.dt_column not in row:
                     dt = game_dt - datetime.timedelta(hours=1)
                 else:
