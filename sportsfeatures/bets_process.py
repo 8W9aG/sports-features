@@ -34,7 +34,10 @@ def bet_process(
         nonlocal bookie_odds
         nonlocal wins
 
-        game_dt = pd.Timestamp(row[dt_column]).tz_localize("UTC")
+        try:
+            game_dt = pd.Timestamp(row[dt_column]).tz_localize("UTC")
+        except TypeError:
+            game_dt = pd.Timestamp(row[dt_column]).tz_convert("UTC")
 
         price_efficiency = (
             None if not bookie_odds else mean_squared_error(bookie_odds, wins)
