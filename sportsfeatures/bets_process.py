@@ -11,6 +11,14 @@ from .columns import DELIMITER
 from .identifier import Identifier
 
 
+def _force_utc_aware(series, timezone="UTC"):
+    series = pd.to_datetime(series, errors="coerce")
+
+    if series.dt.tz is None:
+        return series.dt.tz_localize(timezone, ambiguous="NaT", nonexistent="NaT")
+    return series.dt.tz_convert(timezone)
+
+
 def bet_process(
     df: pd.DataFrame, identifiers: list[Identifier], dt_column: str
 ) -> pd.DataFrame:
@@ -26,7 +34,7 @@ def bet_process(
         nonlocal bookie_odds
         nonlocal wins
 
-        game_dt = row[dt_column]
+        game_dt = pd.Timestamp(row[dt_column]).tz_localize("UTC")
 
         price_efficiency = (
             None if not bookie_odds else mean_squared_error(bookie_odds, wins)
@@ -72,6 +80,7 @@ def bet_process(
             )
             if df.empty:
                 continue
+            df["dt"] = _force_utc_aware(df["dt"])
             df = df.sort_values(by="dt")
             odds_max = df["odds"].max()
             odds_min = df["odds"].min()
