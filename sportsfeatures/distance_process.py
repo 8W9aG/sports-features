@@ -1,6 +1,6 @@
 """Process the distance between two locations."""
 
-# pylint: disable=duplicate-code
+# pylint: disable=duplicate-code,too-many-branches
 
 import functools
 
@@ -55,6 +55,8 @@ def distance_process(df: pd.DataFrame, identifiers: list[Identifier]) -> pd.Data
                 continue
             identifier_id = row[identifier.column]
             if pd.isnull(identifier_id):
+                continue
+            if not isinstance(identifier_id, str):
                 continue
             key = "_".join([str(identifier.entity_type), identifier_id])
             last_location = last_identifier_locations.get(key)

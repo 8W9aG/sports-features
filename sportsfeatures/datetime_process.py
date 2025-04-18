@@ -2,6 +2,7 @@
 
 import datetime
 import random
+from warnings import simplefilter
 
 import pandas as pd
 from feature_engine.datetime import DatetimeFeatures
@@ -21,6 +22,7 @@ def _gen_datetime(
 
 def datetime_process(df: pd.DataFrame) -> pd.DataFrame:
     """Process datetime features."""
+    simplefilter(action="ignore", category=pd.errors.PerformanceWarning)
     dtf = DatetimeFeatures(
         features_to_extract="all",
         missing_values="ignore",
