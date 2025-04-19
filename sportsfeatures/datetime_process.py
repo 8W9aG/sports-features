@@ -24,6 +24,7 @@ def datetime_process(df: pd.DataFrame) -> pd.DataFrame:
     """Process datetime features."""
     simplefilter(action="ignore", category=pd.errors.PerformanceWarning)
     dtf = DatetimeFeatures(
+        variables=df.select_dtypes(include=["datetime64"]).columns.tolist(),  # type: ignore
         features_to_extract="all",
         missing_values="ignore",
         drop_original=False,
