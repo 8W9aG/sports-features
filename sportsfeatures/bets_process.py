@@ -169,9 +169,12 @@ def bet_process(
             row[
                 DELIMITER.join([identifier.column_prefix, "odds", "consensusflips"])
             ] = consensus_flips
-            row[DELIMITER.join([identifier.column_prefix, "odds", "roc1day"])] = (
-                oneday_df["odds"].iloc[-1] - oneday_df["odds"].iloc[0]
-            ) / datetime.timedelta(days=1).total_seconds()
+            if len(oneday_df) > 1:
+                row[DELIMITER.join([identifier.column_prefix, "odds", "roc1day"])] = (
+                    oneday_df["odds"].iloc[-1] - oneday_df["odds"].iloc[0]
+                ) / datetime.timedelta(days=1).total_seconds()
+            else:
+                row[DELIMITER.join([identifier.column_prefix, "odds", "roc1day"])] = 0.0
             row[DELIMITER.join([identifier.column_prefix, "odds"])] = final_odds
             row[
                 DELIMITER.join([identifier.column_prefix, "odds", "priceefficiency"])
