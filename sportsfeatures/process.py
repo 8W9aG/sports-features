@@ -9,6 +9,7 @@ from .datetime_process import datetime_process
 from .datetimesub_process import datetimesub_process
 from .distance_process import distance_process
 from .identifier import Identifier
+from .lastplayed_process import lastplayed_process
 from .margin_process import margin_process
 from .offensive_efficiency_process import offensive_efficiency_process
 from .remove_process import remove_process
@@ -31,5 +32,6 @@ def process(
     df = timeseries_process(df, identifiers, windows, dt_column)
     df = datetime_process(df)
     df = distance_process(df, identifiers)
+    df = lastplayed_process(df, identifiers, dt_column)
     df = remove_process(df, identifiers)
     return df
