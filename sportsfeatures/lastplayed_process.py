@@ -18,6 +18,7 @@ def lastplayed_process(
     """Process a dataframe for last played."""
     tqdm.pandas(desc="Last Played Features")
     last_identifier_dts: dict[str, datetime.datetime | None] = {}
+    first_identifier_dts: dict[str, datetime.datetime] = {}
 
     def record_time(
         row: pd.Series,
@@ -25,6 +26,7 @@ def lastplayed_process(
         dt_column: str,
     ) -> pd.Series:
         nonlocal last_identifier_dts
+        nonlocal first_identifier_dts
 
         dt = row[dt_column]
         for identifier in identifiers:
@@ -42,6 +44,13 @@ def lastplayed_process(
                     dt - last_dt
                 ).days
             last_identifier_dts[key] = dt
+            first_dt = first_identifier_dts.get(key)
+            if first_dt is not None and dt is not None:
+                row[DELIMITER.join([identifier.column_prefix, "firstplayeddays"])] = (
+                    dt - first_dt
+                ).days
+            elif first_dt is None and dt is not None:
+                first_identifier_dts[key] = dt
         return row
 
     return df.progress_apply(
