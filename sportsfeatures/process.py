@@ -30,7 +30,7 @@ def process(
     df = bet_process(df, identifiers, dt_column)
     df = datetimesub_process(df, dt_column, identifiers)
     df = timeseries_process(df, identifiers, windows, dt_column)
-    df = datetime_process(df)
+    df = datetime_process(df, dt_column)
     df = distance_process(df, identifiers)
     df = lastplayed_process(df, identifiers, dt_column)
     df = remove_process(df, identifiers)
