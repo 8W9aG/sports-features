@@ -83,7 +83,7 @@ def timeseries_process(
         dfs = [df[x.column] for x in entity_type_identifiers]
         if dfs:
             unique_ids = pd.unique(pd.concat(dfs))
-            for unique_id in tqdm(unique_ids, desc=f"Timeseries {entity_type} IDs"):
+            for unique_id in unique_ids:
                 # Find all column values
                 for column in columns:
                     id_df = pd.concat(
