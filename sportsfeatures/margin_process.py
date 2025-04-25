@@ -30,7 +30,10 @@ def margin_process(
                 if identifier.points_column is not None
                 else []
             ):
-                columns.add(feature_column[len(identifier.column_prefix) :])
+                clipped_column = feature_column[len(identifier.column_prefix) :]
+                if not clipped_column:
+                    continue
+                columns.add(clipped_column)
         # Process the margins for each column
         drop_columns = set()
         for column in columns:
