@@ -53,7 +53,7 @@ def margin_process(
         if dfs:
             unique_ids = pd.unique(pd.concat(dfs))
             # Process each ID
-            for unique_id in unique_ids:
+            for unique_id in tqdm(unique_ids, desc=f"Margin {entity_type} IDs"):
                 # Find all column values
                 for column in columns:
                     # Calculate metric list
