@@ -66,20 +66,17 @@ def timeseries_process(
                 if identifier.points_column is not None
                 else []
             ):
-                clipped_column = feature_column[len(identifier.column_prefix) :]
-                if not clipped_column:
-                    continue
-                columns.add(clipped_column)
+                columns.add(feature_column[len(identifier.column_prefix) :])
                 # Add the new columns to the dataframe
                 for lag in _LAGS:
-                    df[DELIMITER.join([clipped_column, "lag", str(lag)])] = None
+                    df[DELIMITER.join([feature_column, "lag", str(lag)])] = None
                 for window in windows:
                     window_col = (
                         str(window.days) + "days" if window is not None else "all"
                     )
                     for window_func in _WINDOW_FUNCS:
                         df[
-                            DELIMITER.join([clipped_column, window_func, window_col])
+                            DELIMITER.join([feature_column, window_func, window_col])
                         ] = None
 
         # Find the unique IDs
