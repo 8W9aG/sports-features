@@ -1,10 +1,8 @@
 """Processing for time series features."""
 
-# pylint: disable=duplicate-code
+# pylint: disable=duplicate-code,too-many-branches,too-many-nested-blocks
 
 import datetime
-import functools
-import logging
 
 import pandas as pd
 from pandarallel import pandarallel  # type: ignore
@@ -14,147 +12,33 @@ from .columns import DELIMITER
 from .entity_type import EntityType
 from .identifier import Identifier
 
-
-def _extract_identifier_timeseries(
-    df: pd.DataFrame, identifiers: list[Identifier], dt_column: str
-) -> dict[str, pd.DataFrame]:
-    tqdm.pandas(desc="Timeseries Progress")
-    identifier_ts: dict[str, pd.DataFrame] = {}
-    team_identifiers = [x for x in identifiers if x.entity_type == EntityType.TEAM]
-    player_identifiers = [x for x in identifiers if x.entity_type == EntityType.PLAYER]
-    relevant_identifiers = team_identifiers + player_identifiers
-
-    def record_timeseries_features(row: pd.Series) -> pd.Series:
-        nonlocal identifier_ts
-        nonlocal relevant_identifiers
-
-        for identifier in relevant_identifiers:
-            if identifier.column not in row:
-                continue
-            identifier_id = row[identifier.column]
-            if pd.isnull(identifier_id):
-                continue
-            key = DELIMITER.join([identifier.entity_type, identifier_id])
-            df = identifier_ts.get(key, pd.DataFrame())
-            df.loc[row.name, dt_column] = row[dt_column]  # type: ignore
-            for feature_column in identifier.feature_columns:
-                if feature_column not in row:
-                    continue
-                value = row[feature_column]
-                if pd.isnull(value):
-                    continue
-                column = feature_column[len(identifier.column_prefix) :]
-                if column not in df:
-                    df[column] = None
-                df.loc[row.name, column] = value  # type: ignore
-            identifier_ts[key] = df.infer_objects()
-
-        return row
-
-    df.progress_apply(record_timeseries_features, axis=1)  # type: ignore
-    return identifier_ts
-
-
-def _process_identifier_ts(
-    identifier_ts: dict[str, pd.DataFrame],
-    windows: list[datetime.timedelta | None],
-    dt_column: str,
-) -> dict[str, pd.DataFrame]:
-    # pylint: disable=too-many-locals
-    for identifier_id in tqdm(identifier_ts):
-        identifier_df = identifier_ts[identifier_id]
-        original_identifier_df = identifier_df.copy()
-        drop_columns = original_identifier_df.columns.values
-        for window in windows + [1, 2, 4, 8]:
-            if isinstance(window, int):
-                lag_df = (
-                    original_identifier_df.shift(window - 1)
-                    if window != 1
-                    else original_identifier_df
-                )
-                for column in original_identifier_df.columns.values:
-                    if column == dt_column:
-                        continue
-                    feature_column = DELIMITER.join([column, "lag", str(window)])
-                    identifier_df[feature_column] = lag_df[column]
-            else:
-                window_df = (
-                    identifier_df.rolling(window, on=dt_column)
-                    if window is not None
-                    else identifier_df.expanding()
-                )
-                window_col = str(window.days) + "days" if window is not None else "all"
-                for column in original_identifier_df.columns.values:
-                    if column == dt_column:
-                        continue
-                    count_column = DELIMITER.join([column, "count", window_col])  # type: ignore
-                    sum_column = DELIMITER.join([column, "sum", window_col])  # type: ignore
-                    mean_column = DELIMITER.join([column, "mean", window_col])  # type: ignore
-                    median_column = DELIMITER.join([column, "median", window_col])  # type: ignore
-                    var_column = DELIMITER.join([column, "var", window_col])  # type: ignore
-                    std_column = DELIMITER.join([column, "std", window_col])  # type: ignore
-                    min_column = DELIMITER.join([column, "min", window_col])  # type: ignore
-                    max_column = DELIMITER.join([column, "max", window_col])  # type: ignore
-                    skew_column = DELIMITER.join([column, "skew", window_col])  # type: ignore
-                    kurt_column = DELIMITER.join([column, "kurt", window_col])  # type: ignore
-                    sem_column = DELIMITER.join([column, "sem", window_col])  # type: ignore
-                    rank_column = DELIMITER.join([column, "rank", window_col])  # type: ignore
-                    try:
-                        identifier_df[count_column] = window_df[column].count()
-                        identifier_df[sum_column] = window_df[column].sum()
-                        identifier_df[mean_column] = window_df[column].mean()
-                        identifier_df[median_column] = window_df[column].median()
-                        identifier_df[var_column] = window_df[column].var()
-                        identifier_df[std_column] = window_df[column].std()
-                        identifier_df[min_column] = window_df[column].min()
-                        identifier_df[max_column] = window_df[column].max()
-                        identifier_df[skew_column] = window_df[column].skew()
-                        identifier_df[kurt_column] = window_df[column].kurt()
-                        identifier_df[sem_column] = window_df[column].sem()
-                        identifier_df[rank_column] = window_df[column].rank()
-                    except pd.errors.DataError as exc:
-                        logging.warning(str(exc))
-        identifier_ts[identifier_id] = identifier_df.shift(1).drop(columns=drop_columns)
-
-    return identifier_ts
-
-
-def _write_ts_features(
-    df: pd.DataFrame,
-    identifier_ts: dict[str, pd.DataFrame],
-    identifiers: list[Identifier],
-) -> pd.DataFrame:
-    def write_timeseries_features(
-        row: pd.Series,
-        identifier_ts: dict[str, pd.DataFrame],
-        identifiers: list[Identifier],
-    ) -> pd.Series:
-        for identifier in identifiers:
-            if identifier.column not in row:
-                continue
-            identifier_id = row[identifier.column]
-            if pd.isnull(identifier_id):
-                continue
-            key = DELIMITER.join([identifier.entity_type, identifier_id])
-            if key not in identifier_ts:
-                continue
-            identifier_df = identifier_ts[key]
-            identifier_row = identifier_df.iloc[0]
-            for column in identifier_df.columns.values:
-                new_column = identifier.column_prefix + column
-                row[new_column] = identifier_row[column]
-            identifier_ts[key] = identifier_df.iloc[1:]
-
-        return row
-
-    return df.progress_apply(
-        functools.partial(
-            write_timeseries_features,
-            identifier_ts=identifier_ts,
-            identifiers=identifiers,
-        ),
-        axis=1,
-    )  # type: ignore
+_LAGS = [1, 2, 4, 8]
+_COUNT_FUNC = "count"
+_SUM_FUNC = "sum"
+_MEAN_FUNC = "mean"
+_MEDIAN_FUNC = "median"
+_VAR_FUNC = "var"
+_STD_FUNC = "std"
+_MIN_FUNC = "min"
+_MAX_FUNC = "max"
+_SKEW_FUNC = "skew"
+_KURT_FUNC = "kurt"
+_SEM_FUNC = "sem"
+_RANK_FUNC = "rank"
+_WINDOW_FUNCS = [
+    _COUNT_FUNC,
+    _SUM_FUNC,
+    _MEAN_FUNC,
+    _MEDIAN_FUNC,
+    _VAR_FUNC,
+    _STD_FUNC,
+    _MIN_FUNC,
+    _MAX_FUNC,
+    _SKEW_FUNC,
+    _KURT_FUNC,
+    _SEM_FUNC,
+    _RANK_FUNC,
+]
 
 
 def timeseries_process(
@@ -166,9 +50,359 @@ def timeseries_process(
     """Process a dataframe for its timeseries features."""
     # pylint: disable=too-many-locals,consider-using-dict-items,too-many-statements,duplicate-code
     pandarallel.initialize(progress_bar=True)
-    tqdm.pandas(desc="Progress")
-    identifier_ts: dict[str, pd.DataFrame] = _extract_identifier_timeseries(
-        df, identifiers, dt_column
-    )
-    identifier_ts = _process_identifier_ts(identifier_ts, windows, dt_column)
-    return _write_ts_features(df, identifier_ts, identifiers)
+    tqdm.pandas(desc="Timeseries Progress")
+
+    # For each entity type
+    for entity_type in EntityType:
+        # Isolate the identifiers
+        entity_type_identifiers = [
+            x for x in identifiers if x.entity_type == entity_type
+        ]
+        # Find the columns
+        columns = set()
+        for identifier in entity_type_identifiers:
+            for feature_column in identifier.feature_columns + (
+                [identifier.points_column]
+                if identifier.points_column is not None
+                else []
+            ):
+                columns.add(feature_column[len(identifier.column_prefix) :])
+                # Add the new columns to the dataframe
+                for lag in _LAGS:
+                    df[DELIMITER.join([feature_column, "lag", str(lag)])] = None
+                for window in windows:
+                    window_col = (
+                        str(window.days) + "days" if window is not None else "all"
+                    )
+                    for window_func in _WINDOW_FUNCS:
+                        df[
+                            DELIMITER.join([feature_column, window_func, window_col])
+                        ] = None
+
+        # Find the unique IDs
+        dfs = [df[x.column] for x in entity_type_identifiers]
+        if dfs:
+            unique_ids = pd.unique(pd.concat(dfs))
+            for unique_id in unique_ids:
+                # Find all column values
+                for column in columns:
+                    id_df = pd.concat(
+                        [
+                            df.loc[
+                                df[x.column] == unique_id,
+                                [
+                                    dt_column,
+                                    x.column_prefix + column,
+                                ],
+                            ].rename(
+                                columns={
+                                    x.column_prefix + column: column,
+                                }
+                            )
+                            for x in entity_type_identifiers
+                        ]
+                    ).sort_values(dt_column)
+                    for identifier in entity_type_identifiers:
+                        entity_dt_df = df.loc[
+                            (df[identifier.column] == unique_id)
+                            & (df[dt_column].isin(id_df[dt_column]))
+                        ]
+                        # Process the lags
+                        for lag in _LAGS:
+                            lag_df = id_df.copy()
+                            lag_df[column] = lag_df[column].shift(lag)
+                            df.loc[
+                                (df[identifier.column] == unique_id)
+                                & (df[dt_column].isin(id_df[dt_column])),
+                                [
+                                    DELIMITER.join(
+                                        [
+                                            identifier.column_prefix + column,
+                                            "lag",
+                                            str(lag),
+                                        ]
+                                    )
+                                ],
+                            ] = id_df.loc[
+                                id_df[dt_column].isin(entity_dt_df[dt_column]),
+                                [column],
+                            ].to_numpy()
+                        # Process the window functions
+                        for window in windows:
+                            window_df = (
+                                id_df.rolling(window, on=dt_column)
+                                if window is not None
+                                else id_df.expanding()
+                            )
+                            window_col = (
+                                str(window.days) + "days"
+                                if window is not None
+                                else "all"
+                            )
+                            for window_func in _WINDOW_FUNCS:
+                                window_func_df = id_df.copy()
+                                if window_func == _COUNT_FUNC:
+                                    window_func_df[column] = (
+                                        window_df[column].count().shift(1)
+                                    )
+                                    df.loc[
+                                        (df[identifier.column] == unique_id)
+                                        & (df[dt_column].isin(id_df[dt_column])),
+                                        [
+                                            DELIMITER.join(
+                                                [
+                                                    identifier.column_prefix + column,
+                                                    window_func,
+                                                    window_col,
+                                                ]
+                                            )
+                                        ],
+                                    ] = window_func_df.loc[
+                                        window_func_df[dt_column].isin(
+                                            entity_dt_df[dt_column]
+                                        ),
+                                        [column],
+                                    ].to_numpy()
+                                elif window_func == _SUM_FUNC:
+                                    window_func_df[column] = (
+                                        window_df[column].sum().shift(1)
+                                    )
+                                    df.loc[
+                                        (df[identifier.column] == unique_id)
+                                        & (df[dt_column].isin(id_df[dt_column])),
+                                        [
+                                            DELIMITER.join(
+                                                [
+                                                    identifier.column_prefix + column,
+                                                    window_func,
+                                                    window_col,
+                                                ]
+                                            )
+                                        ],
+                                    ] = window_func_df.loc[
+                                        window_func_df[dt_column].isin(
+                                            entity_dt_df[dt_column]
+                                        ),
+                                        [column],
+                                    ].to_numpy()
+                                elif window_func == _MEAN_FUNC:
+                                    window_func_df[column] = (
+                                        window_df[column].mean().shift(1)
+                                    )
+                                    df.loc[
+                                        (df[identifier.column] == unique_id)
+                                        & (df[dt_column].isin(id_df[dt_column])),
+                                        [
+                                            DELIMITER.join(
+                                                [
+                                                    identifier.column_prefix + column,
+                                                    window_func,
+                                                    window_col,
+                                                ]
+                                            )
+                                        ],
+                                    ] = window_func_df.loc[
+                                        window_func_df[dt_column].isin(
+                                            entity_dt_df[dt_column]
+                                        ),
+                                        [column],
+                                    ].to_numpy()
+                                elif window_func == _MEDIAN_FUNC:
+                                    window_func_df[column] = (
+                                        window_df[column].median().shift(1)
+                                    )
+                                    df.loc[
+                                        (df[identifier.column] == unique_id)
+                                        & (df[dt_column].isin(id_df[dt_column])),
+                                        [
+                                            DELIMITER.join(
+                                                [
+                                                    identifier.column_prefix + column,
+                                                    window_func,
+                                                    window_col,
+                                                ]
+                                            )
+                                        ],
+                                    ] = window_func_df.loc[
+                                        window_func_df[dt_column].isin(
+                                            entity_dt_df[dt_column]
+                                        ),
+                                        [column],
+                                    ].to_numpy()
+                                elif window_func == _VAR_FUNC:
+                                    window_func_df[column] = (
+                                        window_df[column].var().shift(1)
+                                    )
+                                    df.loc[
+                                        (df[identifier.column] == unique_id)
+                                        & (df[dt_column].isin(id_df[dt_column])),
+                                        [
+                                            DELIMITER.join(
+                                                [
+                                                    identifier.column_prefix + column,
+                                                    window_func,
+                                                    window_col,
+                                                ]
+                                            )
+                                        ],
+                                    ] = window_func_df.loc[
+                                        window_func_df[dt_column].isin(
+                                            entity_dt_df[dt_column]
+                                        ),
+                                        [column],
+                                    ].to_numpy()
+                                elif window_func == _STD_FUNC:
+                                    window_func_df[column] = (
+                                        window_df[column].std().shift(1)
+                                    )
+                                    df.loc[
+                                        (df[identifier.column] == unique_id)
+                                        & (df[dt_column].isin(id_df[dt_column])),
+                                        [
+                                            DELIMITER.join(
+                                                [
+                                                    identifier.column_prefix + column,
+                                                    window_func,
+                                                    window_col,
+                                                ]
+                                            )
+                                        ],
+                                    ] = window_func_df.loc[
+                                        window_func_df[dt_column].isin(
+                                            entity_dt_df[dt_column]
+                                        ),
+                                        [column],
+                                    ].to_numpy()
+                                elif window_func == _MIN_FUNC:
+                                    window_func_df[column] = (
+                                        window_df[column].min().shift(1)
+                                    )
+                                    df.loc[
+                                        (df[identifier.column] == unique_id)
+                                        & (df[dt_column].isin(id_df[dt_column])),
+                                        [
+                                            DELIMITER.join(
+                                                [
+                                                    identifier.column_prefix + column,
+                                                    window_func,
+                                                    window_col,
+                                                ]
+                                            )
+                                        ],
+                                    ] = window_func_df.loc[
+                                        window_func_df[dt_column].isin(
+                                            entity_dt_df[dt_column]
+                                        ),
+                                        [column],
+                                    ].to_numpy()
+                                elif window_func == _MAX_FUNC:
+                                    window_func_df[column] = (
+                                        window_df[column].max().shift(1)
+                                    )
+                                    df.loc[
+                                        (df[identifier.column] == unique_id)
+                                        & (df[dt_column].isin(id_df[dt_column])),
+                                        [
+                                            DELIMITER.join(
+                                                [
+                                                    identifier.column_prefix + column,
+                                                    window_func,
+                                                    window_col,
+                                                ]
+                                            )
+                                        ],
+                                    ] = window_func_df.loc[
+                                        window_func_df[dt_column].isin(
+                                            entity_dt_df[dt_column]
+                                        ),
+                                        [column],
+                                    ].to_numpy()
+                                elif window_func == _SKEW_FUNC:
+                                    window_func_df[column] = (
+                                        window_df[column].skew().shift(1)
+                                    )
+                                    df.loc[
+                                        (df[identifier.column] == unique_id)
+                                        & (df[dt_column].isin(id_df[dt_column])),
+                                        [
+                                            DELIMITER.join(
+                                                [
+                                                    identifier.column_prefix + column,
+                                                    window_func,
+                                                    window_col,
+                                                ]
+                                            )
+                                        ],
+                                    ] = window_func_df.loc[
+                                        window_func_df[dt_column].isin(
+                                            entity_dt_df[dt_column]
+                                        ),
+                                        [column],
+                                    ].to_numpy()
+                                elif window_func == _KURT_FUNC:
+                                    window_func_df[column] = (
+                                        window_df[column].kurt().shift(1)
+                                    )
+                                    df.loc[
+                                        (df[identifier.column] == unique_id)
+                                        & (df[dt_column].isin(id_df[dt_column])),
+                                        [
+                                            DELIMITER.join(
+                                                [
+                                                    identifier.column_prefix + column,
+                                                    window_func,
+                                                    window_col,
+                                                ]
+                                            )
+                                        ],
+                                    ] = window_func_df.loc[
+                                        window_func_df[dt_column].isin(
+                                            entity_dt_df[dt_column]
+                                        ),
+                                        [column],
+                                    ].to_numpy()
+                                elif window_func == _SEM_FUNC:
+                                    window_func_df[column] = (
+                                        window_df[column].sem().shift(1)
+                                    )
+                                    df.loc[
+                                        (df[identifier.column] == unique_id)
+                                        & (df[dt_column].isin(id_df[dt_column])),
+                                        [
+                                            DELIMITER.join(
+                                                [
+                                                    identifier.column_prefix + column,
+                                                    window_func,
+                                                    window_col,
+                                                ]
+                                            )
+                                        ],
+                                    ] = window_func_df.loc[
+                                        window_func_df[dt_column].isin(
+                                            entity_dt_df[dt_column]
+                                        ),
+                                        [column],
+                                    ].to_numpy()
+                                elif window_func == _RANK_FUNC:
+                                    window_func_df[column] = (
+                                        window_df[column].rank().shift(1)
+                                    )
+                                    df.loc[
+                                        (df[identifier.column] == unique_id)
+                                        & (df[dt_column].isin(id_df[dt_column])),
+                                        [
+                                            DELIMITER.join(
+                                                [
+                                                    identifier.column_prefix + column,
+                                                    window_func,
+                                                    window_col,
+                                                ]
+                                            )
+                                        ],
+                                    ] = window_func_df.loc[
+                                        window_func_df[dt_column].isin(
+                                            entity_dt_df[dt_column]
+                                        ),
+                                        [column],
+                                    ].to_numpy()
+    return df

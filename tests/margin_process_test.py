@@ -45,6 +45,6 @@ class TestMarginProcess(unittest.TestCase):
                 points_column=team_1_points_column,
             ),
         ]
-        new_df = margin_process(df, identifiers)
+        new_df = margin_process(df, identifiers, dt_column)
         print(new_df)
         print(new_df.columns.values)
