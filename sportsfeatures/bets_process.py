@@ -160,9 +160,9 @@ def bet_process(
                 direction_changes
             )
             row[DELIMITER.join([identifier.column_prefix, "odds", "samples"])] = len(df)
-            row[DELIMITER.join([identifier.column_prefix, "odds", "ewm"])] = (
-                resampled_df.mean(axis=1).ewm(alpha=0.2, adjust=False).mean()
-            )
+            # row[DELIMITER.join([identifier.column_prefix, "odds", "ewm"])] = (
+            #    resampled_df.mean(axis=1).ewm(alpha=0.2, adjust=False).mean()
+            # )
             row[DELIMITER.join([identifier.column_prefix, "odds", "bigshifts"])] = (
                 big_shifts
             )

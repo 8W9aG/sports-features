@@ -5,6 +5,7 @@
 import datetime
 import functools
 import logging
+from warnings import simplefilter
 
 import pandas as pd
 from pandarallel import pandarallel  # type: ignore
@@ -147,7 +148,7 @@ def _write_ts_features(
 
         return row
 
-    return df.progress_apply(
+    return df.parallel_apply(
         functools.partial(
             write_timeseries_features,
             identifier_ts=identifier_ts,
@@ -167,6 +168,7 @@ def timeseries_process(
     # pylint: disable=too-many-locals,consider-using-dict-items,too-many-statements,duplicate-code
     pandarallel.initialize(progress_bar=True)
     tqdm.pandas(desc="Progress")
+    simplefilter(action="ignore", category=pd.errors.PerformanceWarning)
     identifier_ts: dict[str, pd.DataFrame] = _extract_identifier_timeseries(
         df, identifiers, dt_column
     )
