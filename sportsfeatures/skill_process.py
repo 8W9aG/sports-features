@@ -7,6 +7,7 @@ import datetime
 import pandas as pd
 from tqdm import tqdm
 
+from .cache import find_best_cache
 from .columns import DELIMITER
 from .entity_type import EntityType
 from .identifier import Identifier
@@ -18,6 +19,7 @@ SKILL_SIGMA_COLUMN = "sigma"
 SKILL_RANKING_COLUMN = "ranking"
 SKILL_PROBABILITY_COLUMN = "probability"
 TIME_SLICE_ALL = "all"
+_SKILL_CACHE_NAME = "skill"
 
 
 def skill_process(
@@ -32,6 +34,17 @@ def skill_process(
     team_identifiers = [x for x in identifiers if x.entity_type == EntityType.TEAM]
     player_identifiers = [x for x in identifiers if x.entity_type == EntityType.PLAYER]
     rating_windows = [WindowedRating(x, dt_column) for x in windows]
+
+    cache_folder = find_best_cache(_SKILL_CACHE_NAME, df)
+    if cache_folder is not None:
+        load_success = False
+        for rating_window in rating_windows:
+            load_success = rating_window.load(cache_folder)
+            if not load_success:
+                break
+        if not load_success:
+            for rating_window in rating_windows:
+                rating_window.reset()
 
     def calculate_skills(row: pd.Series) -> pd.Series:
         nonlocal rating_windows

@@ -166,7 +166,7 @@ def timeseries_process(
 ) -> pd.DataFrame:
     """Process a dataframe for its timeseries features."""
     # pylint: disable=too-many-locals,consider-using-dict-items,too-many-statements,duplicate-code
-    pandarallel.initialize(progress_bar=True)
+    pandarallel.initialize(verbose=0)
     tqdm.pandas(desc="Progress")
     simplefilter(action="ignore", category=pd.errors.PerformanceWarning)
     identifier_ts: dict[str, pd.DataFrame] = _extract_identifier_timeseries(
