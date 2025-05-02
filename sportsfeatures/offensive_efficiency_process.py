@@ -70,4 +70,4 @@ def offensive_efficiency_process(
             identifiers=identifiers,
         ),
         axis=1,
-    )  # type: ignore
+    ).copy()  # type: ignore

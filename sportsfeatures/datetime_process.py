@@ -16,4 +16,4 @@ def datetime_process(df: pd.DataFrame, dt_column: str) -> pd.DataFrame:
         drop_original=False,
         utc=True,
     )
-    return dtf.fit_transform(df)
+    return dtf.fit_transform(df).copy()

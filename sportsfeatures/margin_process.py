@@ -90,4 +90,4 @@ def margin_process(df: pd.DataFrame, identifiers: list[Identifier]) -> pd.DataFr
 
         return row
 
-    return df.progress_apply(record_margin, axis=1)  # type: ignore
+    return df.progress_apply(record_margin, axis=1).copy()  # type: ignore

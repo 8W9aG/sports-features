@@ -196,4 +196,4 @@ def bet_process(
             dt_column=dt_column,
         ),
         axis=1,
-    )  # type: ignore
+    ).copy()  # type: ignore

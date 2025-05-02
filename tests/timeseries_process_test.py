@@ -68,6 +68,10 @@ class TestTimeseriesProcess(unittest.TestCase):
         }
         identifier_ts = _process_identifier_ts(identifier_ts, [datetime.timedelta(days=20), None], dt_column)
         test_df = pd.DataFrame(data={
+            "/kicks_lag_1": [None, 10.0, 20.0],
+            "/kicks_lag_2": [None, None, 10.0],
+            "/kicks_lag_4": [None, None, None],
+            "/kicks_lag_8": [None, None, None],
             "/kicks_count_20days": [None, 1.0, 2.0],
             "/kicks_sum_20days": [None, 10.0, 30.0],
             "/kicks_mean_20days": [None, 10.0, 15.0],
@@ -92,10 +96,6 @@ class TestTimeseriesProcess(unittest.TestCase):
             "/kicks_kurt_all": [None, None, None],
             "/kicks_sem_all": [None, None, 7.071068],
             "/kicks_rank_all": [None, 1.0, 2.0],
-            "/kicks_lag_1": [None, 10.0, 20.0],
-            "/kicks_lag_2": [None, None, 10.0],
-            "/kicks_lag_4": [None, None, None],
-            "/kicks_lag_8": [None, None, None],
         })
         test_df["/kicks_skew_20days"] = test_df["/kicks_skew_20days"].astype(float)
         test_df["/kicks_kurt_20days"] = test_df["/kicks_kurt_20days"].astype(float)

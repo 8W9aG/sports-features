@@ -141,4 +141,4 @@ def skill_process(
         rating_window.save(cache_folder)
     df.to_parquet(os.path.join(cache_folder, _RESULTS_PARQUET_FILENAME))
 
-    return df
+    return df.copy()

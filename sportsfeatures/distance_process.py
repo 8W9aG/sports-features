@@ -82,4 +82,4 @@ def distance_process(df: pd.DataFrame, identifiers: list[Identifier]) -> pd.Data
             venue_identifiers=venue_identifiers,
         ),
         axis=1,
-    )  # type: ignore
+    ).copy()  # type: ignore

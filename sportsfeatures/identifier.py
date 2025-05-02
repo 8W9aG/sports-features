@@ -45,12 +45,23 @@ class Identifier:
     def columns(self) -> list[str]:
         """The columns recognised by the identifier."""
         columns = {self.column}
+        columns |= set(self.numeric_action_columns)
+        if self.team_identifier_column is not None:
+            columns.add(self.team_identifier_column)
+        if self.latitude_column is not None:
+            columns.add(self.latitude_column)
+        if self.longitude_column is not None:
+            columns.add(self.longitude_column)
+        return list(columns)
+
+    @property
+    def numeric_action_columns(self) -> list[str]:
+        """The columns representing action in the numeric space."""
+        columns = set()
         for feature_column in self.feature_columns:
             columns.add(feature_column)
         if self.points_column is not None:
             columns.add(self.points_column)
-        if self.team_identifier_column is not None:
-            columns.add(self.team_identifier_column)
         if self.field_goals_column is not None:
             columns.add(self.field_goals_column)
         if self.assists_column is not None:
@@ -61,8 +72,4 @@ class Identifier:
             columns.add(self.offensive_rebounds_column)
         if self.turnovers_column is not None:
             columns.add(self.turnovers_column)
-        if self.latitude_column is not None:
-            columns.add(self.latitude_column)
-        if self.longitude_column is not None:
-            columns.add(self.longitude_column)
         return list(columns)

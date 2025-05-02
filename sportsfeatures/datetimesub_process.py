@@ -35,4 +35,4 @@ def datetimesub_process(
                     column,
                     str(exc),
                 )
-    return df
+    return df.copy()
