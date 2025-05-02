@@ -148,7 +148,7 @@ def _write_ts_features(
 
         return row
 
-    return df.parallel_apply(
+    return df.progress_apply(
         functools.partial(
             write_timeseries_features,
             identifier_ts=identifier_ts,

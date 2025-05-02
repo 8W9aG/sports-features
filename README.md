@@ -18,6 +18,8 @@ Python 3.11.6:
 - [scikit-learn](https://scikit-learn.org/)
 - [geopy](https://geopy.readthedocs.io/en/stable/)
 - [numpy](https://numpy.org/)
+- [pytest-is-running](https://github.com/adamchainz/pytest-is-running)
+- [joblib](https://joblib.readthedocs.io/en/stable/)
 
 ## Raison D'être :thought_balloon:
 

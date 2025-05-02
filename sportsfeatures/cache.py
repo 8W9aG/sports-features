@@ -5,11 +5,18 @@ import hashlib
 import os
 
 import pandas as pd
+import pytest_is_running
+from joblib import Memory  # type: ignore
 
 from . import __VERSION__
 
 _SPORTS_FEATURES_CACHE_FOLDER = ".sportsfeatures_" + __VERSION__
 SPORTS_FEATURES_DF_FILENAME = "df.parquet.gzip"
+MEMORY = (
+    Memory(".sportsfeatures_joblib_cache", verbose=0)
+    if not pytest_is_running
+    else Memory()
+)
 
 
 def sportsfeatures_cache_folder() -> str:
