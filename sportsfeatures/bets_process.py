@@ -49,9 +49,6 @@ def bet_process(
                 continue
             if identifier.points_column not in row:
                 continue
-            points = row[identifier.points_column]
-            if pd.isnull(points):
-                continue
 
             odds_data = []
             bookies_data = []
@@ -180,10 +177,15 @@ def bet_process(
                 DELIMITER.join([identifier.column_prefix, "odds", "priceefficiency"])
             ] = price_efficiency
             local_bookie_odds.append(1.0 / final_odds)
+
+            points = row[identifier.points_column]
+            if pd.isnull(points):
+                continue
             local_points.append(points)
 
-        bookie_odds.extend(local_bookie_odds)
-        wins.extend([float(x == max(local_points)) for x in local_points])
+        if local_points:
+            bookie_odds.extend(local_bookie_odds)
+            wins.extend([float(x == max(local_points)) for x in local_points])
 
         return row
 

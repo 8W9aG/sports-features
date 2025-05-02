@@ -51,7 +51,9 @@ def skill_process(
                 rating_window.reset()
             cache_folder = None
         else:
-            df_cache = pd.read_parquet(os.path.join(cache_folder, _RESULTS_PARQUET_FILENAME))
+            df_cache = pd.read_parquet(
+                os.path.join(cache_folder, _RESULTS_PARQUET_FILENAME)
+            )
             if len(df_cache) == len(df):
                 return df
             df = df.join(
