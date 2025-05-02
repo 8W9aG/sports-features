@@ -17,6 +17,7 @@ Python 3.11.6:
 - [tqdm](https://github.com/tqdm/tqdm)
 - [scikit-learn](https://scikit-learn.org/)
 - [geopy](https://geopy.readthedocs.io/en/stable/)
+- [numpy](https://numpy.org/)
 
 ## Raison D'être :thought_balloon:
 

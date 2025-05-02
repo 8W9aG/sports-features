@@ -1,13 +1,15 @@
 """Process the current dataframe by adding skill features."""
 
-# pylint: disable=duplicate-code
+# pylint: disable=duplicate-code,too-many-locals,too-many-statements
 
 import datetime
+import os
 
+import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
-from .cache import find_best_cache
+from .cache import create_cache, find_best_cache
 from .columns import DELIMITER
 from .entity_type import EntityType
 from .identifier import Identifier
@@ -20,6 +22,7 @@ SKILL_RANKING_COLUMN = "ranking"
 SKILL_PROBABILITY_COLUMN = "probability"
 TIME_SLICE_ALL = "all"
 _SKILL_CACHE_NAME = "skill"
+_RESULTS_PARQUET_FILENAME = "results.parquet"
 
 
 def skill_process(
@@ -30,12 +33,13 @@ def skill_process(
 ) -> pd.DataFrame:
     """Add skill features to the dataframe."""
     tqdm.pandas(desc="Skill Features")
+    original_df = df.copy()
 
     team_identifiers = [x for x in identifiers if x.entity_type == EntityType.TEAM]
     player_identifiers = [x for x in identifiers if x.entity_type == EntityType.PLAYER]
     rating_windows = [WindowedRating(x, dt_column) for x in windows]
 
-    cache_folder = find_best_cache(_SKILL_CACHE_NAME, df)
+    cache_folder, idx = find_best_cache(_SKILL_CACHE_NAME, df)
     if cache_folder is not None:
         load_success = False
         for rating_window in rating_windows:
@@ -45,6 +49,17 @@ def skill_process(
         if not load_success:
             for rating_window in rating_windows:
                 rating_window.reset()
+            cache_folder = None
+        else:
+            df_cache = pd.read_parquet(os.path.join(cache_folder, _RESULTS_PARQUET_FILENAME))
+            if len(df_cache) == len(df):
+                return df
+            df = df.join(
+                df_cache.drop(
+                    columns=[col for col in df_cache.columns if col in df.columns]
+                ),
+                how="left",
+            )
 
     def calculate_skills(row: pd.Series) -> pd.Series:
         nonlocal rating_windows
@@ -109,4 +124,19 @@ def skill_process(
 
         return row
 
-    return df.progress_apply(calculate_skills, axis=1)  # type: ignore
+    if cache_folder is not None:
+        processed_ilocs = np.arange(idx)
+        all_ilocs = np.arange(len(df))
+        unprocessed_ilocs = np.setdiff1d(all_ilocs, processed_ilocs)
+        df.iloc[unprocessed_ilocs] = df.iloc[unprocessed_ilocs].progress_apply(
+            calculate_skills, axis=1
+        )  # type: ignore
+    else:
+        df = df.progress_apply(calculate_skills, axis=1)  # type: ignore
+
+    cache_folder = create_cache(_SKILL_CACHE_NAME, original_df)
+    for rating_window in rating_windows:
+        rating_window.save(cache_folder)
+    df.to_parquet(os.path.join(cache_folder, _RESULTS_PARQUET_FILENAME))
+
+    return df

@@ -5,3 +5,4 @@ pandarallel>=1.6.5
 tqdm>=4.67.1
 scikit-learn>=1.5.2
 geopy>=2.4.1
+numpy>=1.26.4

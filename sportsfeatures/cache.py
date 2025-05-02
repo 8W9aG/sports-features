@@ -1,6 +1,7 @@
 """Caching functionality for sportsfeatures."""
 
 # pylint: disable=consider-using-enumerate
+import hashlib
 import os
 
 import pandas as pd
@@ -35,7 +36,7 @@ def _first_difference_position(df1: pd.DataFrame, df2: pd.DataFrame) -> int | No
     return len(diff)  # No difference found
 
 
-def find_best_cache(cache_name: str, df: pd.DataFrame) -> str | None:
+def find_best_cache(cache_name: str, df: pd.DataFrame) -> tuple[str | None, int]:
     """Finds the best cached fit."""
     cache_folder = os.path.join(sportsfeatures_cache_folder(), cache_name)
     if not os.path.exists(cache_folder):
@@ -53,4 +54,13 @@ def find_best_cache(cache_name: str, df: pd.DataFrame) -> str | None:
             if diff_idx > max_idx:
                 max_idx = diff_idx
                 cache_path = full_path
-    return cache_path
+    return cache_path, max_idx
+
+
+def create_cache(cache_name: str, df: pd.DataFrame) -> str:
+    """Creates a cache folder and stores the df."""
+    df_hash = hashlib.sha256(df.to_csv().encode()).hexdigest()
+    cache_folder = os.path.join(sportsfeatures_cache_folder(), cache_name, df_hash)
+    os.makedirs(cache_folder, exist_ok=True)
+    df.to_parquet(os.path.join(cache_folder, SPORTS_FEATURES_DF_FILENAME))
+    return cache_folder
