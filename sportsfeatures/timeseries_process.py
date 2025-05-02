@@ -218,10 +218,7 @@ def timeseries_process(
     # Write the columns to the dataframe ahead of time.
     relevant_columns = {dt_column}
     for identifier in identifiers:
-        if (
-            identifier.entity_type != EntityType.TEAM
-            and identifier.entity_type == EntityType.PLAYER
-        ):
+        if identifier.entity_type not in {EntityType.TEAM, EntityType.PLAYER}:
             continue
         relevant_columns.add(identifier.column)
         for column in identifier.numeric_action_columns:
