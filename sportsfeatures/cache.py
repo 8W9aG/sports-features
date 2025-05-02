@@ -33,14 +33,17 @@ def _first_difference_position(df1: pd.DataFrame, df2: pd.DataFrame) -> int | No
     # Align by index and columns to avoid misalignment issues
     df1, df2 = df1.align(df2)
     # Compare element-wise
-    diff = (df1 != df2).values
-    # Iterate by row position
-    for i in range(len(diff)):
-        if diff[i].any():
-            if i == 0:
-                return None
-            return i
-    return len(diff)  # No difference found
+    try:
+        diff = (df1 != df2).values
+        # Iterate by row position
+        for i in range(len(diff)):
+            if diff[i].any():
+                if i == 0:
+                    return None
+                return i
+        return len(diff)  # No difference found
+    except TypeError:
+        return None
 
 
 def find_best_cache(cache_name: str, df: pd.DataFrame) -> tuple[str | None, int]:
