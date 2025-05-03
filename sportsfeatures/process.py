@@ -12,6 +12,7 @@ from .identifier import Identifier
 from .lastplayed_process import lastplayed_process
 from .margin_process import margin_process
 from .offensive_efficiency_process import offensive_efficiency_process
+from .ordinal_process import ordinal_process
 from .remove_process import remove_process
 from .skill_process import skill_process
 from .timeseries_process import timeseries_process
@@ -22,6 +23,7 @@ def process(
     dt_column: str,
     identifiers: list[Identifier],
     windows: list[datetime.timedelta | None],
+    categorical_features: set[str],
 ) -> pd.DataFrame:
     """Process the dataframe for sports features."""
     df = skill_process(df, dt_column, identifiers, windows)
@@ -33,5 +35,6 @@ def process(
     df = datetime_process(df, dt_column)
     df = distance_process(df, identifiers)
     df = lastplayed_process(df, identifiers, dt_column)
+    df = ordinal_process(df, categorical_features)
     df = remove_process(df, identifiers)
     return df
