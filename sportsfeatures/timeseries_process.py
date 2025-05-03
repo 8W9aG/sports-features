@@ -196,7 +196,7 @@ def _write_ts_features(
 
         return row
 
-    return df.swifter.progress_bar(True).apply(
+    return df.parallel_apply(
         functools.partial(
             write_timeseries_features,
             identifier_ts=identifier_ts,
