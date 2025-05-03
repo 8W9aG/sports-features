@@ -8,7 +8,6 @@ import logging
 from warnings import simplefilter
 
 import pandas as pd
-import swifter  # type: ignore
 from pandarallel import pandarallel  # type: ignore
 from tqdm import tqdm
 
@@ -222,7 +221,6 @@ def timeseries_process(
     pandarallel.initialize(verbose=2)
     tqdm.pandas(desc="Progress")
     simplefilter(action="ignore", category=pd.errors.PerformanceWarning)
-    print(f"Using swifter {swifter.__version__}")
 
     # Write the columns to the dataframe ahead of time.
     relevant_columns = {dt_column}

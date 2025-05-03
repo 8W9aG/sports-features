@@ -21,7 +21,6 @@ Python 3.11.6:
 - [pytest-is-running](https://github.com/adamchainz/pytest-is-running)
 - [joblib](https://joblib.readthedocs.io/en/stable/)
 - [polars](https://pola.rs/)
-- [swifter](https://github.com/jmcarpenter2/swifter)
 
 ## Raison D'être :thought_balloon:
 
