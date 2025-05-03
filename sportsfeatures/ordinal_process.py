@@ -11,7 +11,10 @@ def ordinal_process(df: pd.DataFrame, categorical_features: set[str]) -> pd.Data
     for categorical_feature in categorical_features:
         if categorical_feature not in df.columns.values:
             continue
-        df[categorical_feature] = (
-            df[categorical_feature].fillna(0).astype(int).astype("category")
-        )
+        try:
+            df[categorical_feature] = (
+                df[categorical_feature].fillna(0).astype(int).astype("category")
+            )
+        except TypeError:
+            pass
     return df.copy()
