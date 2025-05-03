@@ -46,6 +46,7 @@ _WINDOW_FUNCTIONS = [
     _SEM_WINDOW_FUNCTION,
     _RANK_WINDOW_FUNCTION,
 ]
+_PANDARALLEL_STEP = 20000
 
 
 def _extract_identifier_timeseries(
@@ -196,14 +197,19 @@ def _write_ts_features(
 
         return row
 
-    return df.parallel_apply(
-        functools.partial(
-            write_timeseries_features,
-            identifier_ts=identifier_ts,
-            identifiers=identifiers,
-        ),
-        axis=1,
-    )  # type: ignore
+    for i in tqdm(range(0, len(df), _PANDARALLEL_STEP), desc="Processing chunks"):
+        df.iloc[i : i + _PANDARALLEL_STEP] = df.iloc[
+            i : i + _PANDARALLEL_STEP
+        ].parallel_apply(
+            functools.partial(
+                write_timeseries_features,
+                identifier_ts=identifier_ts,
+                identifiers=identifiers,
+            ),
+            axis=1,
+        )  # type: ignore
+
+    return df
 
 
 def timeseries_process(
