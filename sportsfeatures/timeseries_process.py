@@ -218,7 +218,7 @@ def timeseries_process(
 ) -> pd.DataFrame:
     """Process a dataframe for its timeseries features."""
     # pylint: disable=too-many-locals,consider-using-dict-items,too-many-statements,duplicate-code
-    pandarallel.initialize(verbose=2)
+    pandarallel.initialize(verbose=2, progress_bar=True)
     tqdm.pandas(desc="Progress")
     simplefilter(action="ignore", category=pd.errors.PerformanceWarning)
 
