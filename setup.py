@@ -23,7 +23,7 @@ def install_requires() -> typing.List[str]:
 
 setup(
     name='sportsfeatures',
-    version='0.0.37',
+    version='0.0.38',
     description='A library for processing sports features over a dataframe containing sports data.',
     long_description=long_description,
     long_description_content_type='text/markdown',

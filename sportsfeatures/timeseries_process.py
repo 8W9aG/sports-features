@@ -8,6 +8,7 @@ import logging
 from warnings import simplefilter
 
 import pandas as pd
+import swifter  # type: ignore
 from pandarallel import pandarallel  # type: ignore
 from tqdm import tqdm
 
@@ -185,6 +186,8 @@ def _write_ts_features(
             if key not in identifier_ts:
                 continue
             identifier_df = identifier_ts[key]
+            if identifier_df.empty:
+                continue
             identifier_row = identifier_df.iloc[0]
             for column in identifier_df.columns.values:
                 new_column = identifier.column_prefix + column
@@ -193,7 +196,7 @@ def _write_ts_features(
 
         return row
 
-    return df.progress_apply(
+    return df.swifter.progress_bar(True).apply(
         functools.partial(
             write_timeseries_features,
             identifier_ts=identifier_ts,
@@ -214,6 +217,7 @@ def timeseries_process(
     pandarallel.initialize(verbose=0)
     tqdm.pandas(desc="Progress")
     simplefilter(action="ignore", category=pd.errors.PerformanceWarning)
+    print(f"Using swifter {swifter.__version__}")
 
     # Write the columns to the dataframe ahead of time.
     relevant_columns = {dt_column}
@@ -240,12 +244,9 @@ def timeseries_process(
                     relevant_columns.add(feature_column)
                     df[feature_column] = None
 
-    df_subset = df[list(relevant_columns)]
     identifier_ts: dict[str, pd.DataFrame] = _extract_identifier_timeseries(
-        df_subset, identifiers, dt_column
+        df, identifiers, dt_column
     )
     identifier_ts = _process_identifier_ts(identifier_ts, windows, dt_column)
-    df[list(relevant_columns)] = _write_ts_features(
-        df_subset, identifier_ts, identifiers
-    )
+    df = _write_ts_features(df, identifier_ts, identifiers)
     return df[sorted(df.columns.values)].copy()
