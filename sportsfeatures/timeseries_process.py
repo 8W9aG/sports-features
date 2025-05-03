@@ -2,9 +2,11 @@
 
 # pylint: disable=duplicate-code,too-many-branches,too-many-nested-blocks
 
+import contextlib
 import datetime
 import functools
 import logging
+import sys
 from warnings import simplefilter
 
 import pandas as pd
@@ -189,25 +191,25 @@ def _write_ts_features(
             identifier_df = identifier_ts[key]
             if identifier_df.empty:
                 continue
-            identifier_row = identifier_df.iloc[0]
+            identifier_row = identifier_df.loc[row.name]  # type: ignore
             for column in identifier_df.columns.values:
                 new_column = identifier.column_prefix + column
                 row[new_column] = identifier_row[column]
-            identifier_ts[key] = identifier_df.iloc[1:]
 
         return row
 
-    for i in tqdm(range(0, len(df), _PANDARALLEL_STEP), desc="Processing chunks"):
-        df.iloc[i : i + _PANDARALLEL_STEP] = df.iloc[
-            i : i + _PANDARALLEL_STEP
-        ].parallel_apply(
-            functools.partial(
-                write_timeseries_features,
-                identifier_ts=identifier_ts,
-                identifiers=identifiers,
-            ),
-            axis=1,
-        )  # type: ignore
+    with contextlib.redirect_stdout(sys.stderr):
+        for i in tqdm(range(0, len(df), _PANDARALLEL_STEP), desc="Processing chunks"):
+            df.iloc[i : i + _PANDARALLEL_STEP] = df.iloc[
+                i : i + _PANDARALLEL_STEP
+            ].parallel_apply(
+                functools.partial(
+                    write_timeseries_features,
+                    identifier_ts=identifier_ts,
+                    identifiers=identifiers,
+                ),
+                axis=1,
+            )  # type: ignore
 
     return df
 
@@ -220,7 +222,7 @@ def timeseries_process(
 ) -> pd.DataFrame:
     """Process a dataframe for its timeseries features."""
     # pylint: disable=too-many-locals,consider-using-dict-items,too-many-statements,duplicate-code
-    pandarallel.initialize(verbose=0)
+    pandarallel.initialize(verbose=2)
     tqdm.pandas(desc="Progress")
     simplefilter(action="ignore", category=pd.errors.PerformanceWarning)
     print(f"Using swifter {swifter.__version__}")
