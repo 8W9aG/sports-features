@@ -2,11 +2,9 @@
 
 # pylint: disable=duplicate-code,too-many-branches,too-many-nested-blocks
 
-import contextlib
 import datetime
 import functools
 import logging
-import sys
 from warnings import simplefilter
 
 import pandas as pd
@@ -198,18 +196,17 @@ def _write_ts_features(
 
         return row
 
-    with contextlib.redirect_stdout(sys.stderr):
-        for i in tqdm(range(0, len(df), _PANDARALLEL_STEP), desc="Processing chunks"):
-            df.iloc[i : i + _PANDARALLEL_STEP] = df.iloc[
-                i : i + _PANDARALLEL_STEP
-            ].parallel_apply(
-                functools.partial(
-                    write_timeseries_features,
-                    identifier_ts=identifier_ts,
-                    identifiers=identifiers,
-                ),
-                axis=1,
-            )  # type: ignore
+    for i in tqdm(range(0, len(df), _PANDARALLEL_STEP), desc="Processing chunks"):
+        df.iloc[i : i + _PANDARALLEL_STEP] = df.iloc[
+            i : i + _PANDARALLEL_STEP
+        ].parallel_apply(
+            functools.partial(
+                write_timeseries_features,
+                identifier_ts=identifier_ts,
+                identifiers=identifiers,
+            ),
+            axis=1,
+        )  # type: ignore
 
     return df
 
