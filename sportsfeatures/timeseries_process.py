@@ -1,14 +1,11 @@
 """Processing for time series features."""
 
-# pylint: disable=duplicate-code,too-many-branches,too-many-nested-blocks
+# pylint: disable=duplicate-code,too-many-branches,too-many-nested-blocks,too-many-locals,too-many-statements
 
 import datetime
-import functools
-import logging
-from warnings import simplefilter
 
 import pandas as pd
-from pandarallel import pandarallel  # type: ignore
+import polars as pl
 from tqdm import tqdm
 
 from .columns import DELIMITER
@@ -45,169 +42,8 @@ _WINDOW_FUNCTIONS = [
     _SEM_WINDOW_FUNCTION,
     _RANK_WINDOW_FUNCTION,
 ]
-_PANDARALLEL_STEP = 20000
-
-
-def _extract_identifier_timeseries(
-    df: pd.DataFrame, identifiers: list[Identifier], dt_column: str
-) -> dict[str, pd.DataFrame]:
-    tqdm.pandas(desc="Timeseries Progress")
-    identifier_ts: dict[str, pd.DataFrame] = {}
-    team_identifiers = [x for x in identifiers if x.entity_type == EntityType.TEAM]
-    player_identifiers = [x for x in identifiers if x.entity_type == EntityType.PLAYER]
-    relevant_identifiers = team_identifiers + player_identifiers
-
-    def record_timeseries_features(row: pd.Series) -> pd.Series:
-        nonlocal identifier_ts
-        nonlocal relevant_identifiers
-
-        for identifier in relevant_identifiers:
-            if identifier.column not in row:
-                continue
-            identifier_id = row[identifier.column]
-            if pd.isnull(identifier_id):
-                continue
-            key = DELIMITER.join([identifier.entity_type, identifier_id])
-            df = identifier_ts.get(key, pd.DataFrame())
-            df.loc[row.name, dt_column] = row[dt_column]  # type: ignore
-            for feature_column in identifier.numeric_action_columns:
-                if feature_column not in row:
-                    continue
-                value = row[feature_column]
-                if pd.isnull(value):
-                    continue
-                column = feature_column[len(identifier.column_prefix) :]
-                if column not in df:
-                    df[column] = None
-                df.loc[row.name, column] = value  # type: ignore
-            identifier_ts[key] = df.infer_objects()
-
-        return row
-
-    df.progress_apply(record_timeseries_features, axis=1)  # type: ignore
-    return identifier_ts
-
-
-def _process_identifier_ts(
-    identifier_ts: dict[str, pd.DataFrame],
-    windows: list[datetime.timedelta | None],
-    dt_column: str,
-) -> dict[str, pd.DataFrame]:
-    # pylint: disable=too-many-locals
-    for identifier_id in tqdm(identifier_ts):
-        identifier_df = identifier_ts[identifier_id]
-        original_identifier_df = identifier_df.copy()
-        drop_columns = original_identifier_df.columns.values
-        for lag in _LAGS:
-            lag_df = (
-                original_identifier_df.shift(lag - 1)
-                if lag != 1
-                else original_identifier_df
-            )
-            for column in drop_columns:
-                if column == dt_column:
-                    continue
-                feature_column = DELIMITER.join([column, _LAG_COLUMN, str(lag)])
-                identifier_df[feature_column] = lag_df[column]
-
-        for window in windows:
-            window_df = (
-                identifier_df.rolling(window, on=dt_column)
-                if window is not None
-                else identifier_df.expanding()
-            )
-            window_col = (
-                str(window.days) + _DAYS_COLUMN_SUFFIX
-                if window is not None
-                else _ALL_SUFFIX
-            )
-            for column in drop_columns:
-                if column == dt_column:
-                    continue
-                for window_function in _WINDOW_FUNCTIONS:
-                    feature_column = DELIMITER.join(
-                        [column, window_function, window_col]
-                    )  # type: ignore
-                    try:
-                        if window_function == _COUNT_WINDOW_FUNCTION:
-                            identifier_df[feature_column] = window_df[column].count()
-                        elif window_function == _SUM_WINDOW_FUNCTION:
-                            identifier_df[feature_column] = window_df[column].sum()
-                        elif window_function == _MEAN_WINDOW_FUNCTION:
-                            identifier_df[feature_column] = window_df[column].mean()
-                        elif window_function == _MEDIAN_WINDOW_FUNCTION:
-                            identifier_df[feature_column] = window_df[column].median()
-                        elif window_function == _VAR_WINDOW_FUNCTION:
-                            identifier_df[feature_column] = window_df[column].var()
-                        elif window_function == _STD_WINDOW_FUNCTION:
-                            identifier_df[feature_column] = window_df[column].std()
-                        elif window_function == _MIN_WINDOW_FUNCTION:
-                            identifier_df[feature_column] = window_df[column].min()
-                        elif window_function == _MAX_WINDOW_FUNCTION:
-                            identifier_df[feature_column] = window_df[column].max()
-                        elif window_function == _SKEW_WINDOW_FUNCTION:
-                            identifier_df[feature_column] = window_df[column].skew()
-                        elif window_function == _KURT_WINDOW_FUNCTION:
-                            identifier_df[feature_column] = window_df[column].kurt()
-                        elif window_function == _SEM_WINDOW_FUNCTION:
-                            identifier_df[feature_column] = window_df[column].sem()
-                        elif window_function == _RANK_WINDOW_FUNCTION:
-                            identifier_df[feature_column] = window_df[column].rank()
-                        else:
-                            raise ValueError(
-                                f"Unrecognised window function: {window_function}"
-                            )
-                    except pd.errors.DataError as exc:
-                        logging.warning(str(exc))
-        identifier_ts[identifier_id] = (
-            identifier_df.shift(1).drop(columns=drop_columns).copy()
-        )
-
-    return identifier_ts
-
-
-def _write_ts_features(
-    df: pd.DataFrame,
-    identifier_ts: dict[str, pd.DataFrame],
-    identifiers: list[Identifier],
-) -> pd.DataFrame:
-    def write_timeseries_features(
-        row: pd.Series,
-        identifier_ts: dict[str, pd.DataFrame],
-        identifiers: list[Identifier],
-    ) -> pd.Series:
-        for identifier in identifiers:
-            if identifier.column not in row:
-                continue
-            identifier_id = row[identifier.column]
-            if pd.isnull(identifier_id):
-                continue
-            key = DELIMITER.join([identifier.entity_type, identifier_id])
-            if key not in identifier_ts:
-                continue
-            identifier_df = identifier_ts[key]
-            if identifier_df.empty:
-                continue
-            identifier_row = identifier_df.loc[row.name]  # type: ignore
-            for column in identifier_df.columns.values:
-                new_column = identifier.column_prefix + column
-                row[new_column] = identifier_row[column]
-
-        return row
-
-    for i in tqdm(range(0, len(df), _PANDARALLEL_STEP), desc="Processing chunks"):
-        df.iloc[i : i + _PANDARALLEL_STEP] = df.iloc[
-            i : i + _PANDARALLEL_STEP
-        ].parallel_apply(
-            functools.partial(
-                write_timeseries_features,
-                identifier_ts=identifier_ts,
-                identifiers=identifiers,
-            ),
-            axis=1,
-        )  # type: ignore
-
-    return df
+_ROW_IDX_COLUMN = "row_idx"
+_COLUMN_PREFIX_COLUMN = "column_prefix"
 
 
 def timeseries_process(
@@ -217,39 +53,149 @@ def timeseries_process(
     dt_column: str,
 ) -> pd.DataFrame:
     """Process a dataframe for its timeseries features."""
-    # pylint: disable=too-many-locals,consider-using-dict-items,too-many-statements,duplicate-code
-    pandarallel.initialize(verbose=2, progress_bar=True)
-    tqdm.pandas(desc="Progress")
-    simplefilter(action="ignore", category=pd.errors.PerformanceWarning)
 
-    # Write the columns to the dataframe ahead of time.
-    relevant_columns = {dt_column}
-    for identifier in identifiers:
-        if identifier.entity_type not in {EntityType.TEAM, EntityType.PLAYER}:
-            continue
-        relevant_columns.add(identifier.column)
-        for column in identifier.numeric_action_columns:
-            relevant_columns.add(column)
-            for lag in _LAGS:
-                feature_column = DELIMITER.join([column, _LAG_COLUMN, str(lag)])
-                relevant_columns.add(feature_column)
-                df[feature_column] = None
+    pl_df = pl.from_pandas(df)
+    pl_df = pl_df.with_row_count(_ROW_IDX_COLUMN)
+    for entity_type in [EntityType.TEAM, EntityType.PLAYER]:
+        entity_identifiers = [x for x in identifiers if x.entity_type == entity_type]
+        # Find all the unique identifiers
+        unique_ids = set()
+        for identifier in entity_identifiers:
+            unique_ids.update(pl_df[identifier.column].unique().to_list())
+        for unique_id in tqdm(unique_ids, desc=f"Processing {entity_type} time series"):
+            # For each unique identifier, isolate their features into their respective columns
+            identifier_dfs = []
+            all_expected_cols = set()
+            for identifier in entity_identifiers:
+                cols = [
+                    x for x in identifier.numeric_action_columns if x in pl_df.columns
+                ]
+                col_map = {x: x[len(identifier.column_prefix) :] for x in cols}
+                identifier_df = (
+                    pl_df.filter(pl.col(identifier.column) == unique_id)
+                    .rename(col_map)
+                    .select(
+                        pl.col(list(col_map.values()) + [dt_column, _ROW_IDX_COLUMN])
+                    )
+                )
+                identifier_df = identifier_df.with_columns(
+                    pl.lit(identifier.column_prefix).alias(_COLUMN_PREFIX_COLUMN)
+                )
+                identifier_dfs.append(identifier_df)
+                all_expected_cols.update(identifier_df.columns)
+                all_expected_cols.add(_COLUMN_PREFIX_COLUMN)
+            identifier_dfs = [
+                x.with_columns(
+                    pl.lit(None).alias(col)
+                    for col in all_expected_cols
+                    if col not in x.columns
+                ).select(all_expected_cols)
+                for x in identifier_dfs
+            ]
+            id_df = pl.concat(identifier_dfs).sort(dt_column)
+            # Perform time series on these features
             for window in windows:
                 window_col = (
                     str(window.days) + _DAYS_COLUMN_SUFFIX
                     if window is not None
                     else _ALL_SUFFIX
                 )
-                for window_function in _WINDOW_FUNCTIONS:
-                    feature_column = DELIMITER.join(
-                        [column, window_function, window_col]
+                agg_funcs = []
+                window_cols = set()
+                for window_func in _WINDOW_FUNCTIONS:
+                    for col in all_expected_cols:
+                        if col in {dt_column, _ROW_IDX_COLUMN, _COLUMN_PREFIX_COLUMN}:
+                            continue
+                        feature_column = DELIMITER.join([col, window_func, window_col])
+                        if window_func == _COUNT_WINDOW_FUNCTION:
+                            agg_funcs.append(pl.len().alias(feature_column))
+                        elif window_func == _SUM_WINDOW_FUNCTION:
+                            agg_funcs.append(pl.sum(col).alias(feature_column))
+                        elif window_func == _MEAN_WINDOW_FUNCTION:
+                            agg_funcs.append(pl.mean(col).alias(feature_column))
+                        elif window_func == _MEDIAN_WINDOW_FUNCTION:
+                            agg_funcs.append(pl.median(col).alias(feature_column))
+                        elif window_func == _VAR_WINDOW_FUNCTION:
+                            agg_funcs.append(pl.var(col).alias(feature_column))
+                        elif window_func == _STD_WINDOW_FUNCTION:
+                            agg_funcs.append(pl.std(col).alias(feature_column))
+                        elif window_func == _MIN_WINDOW_FUNCTION:
+                            agg_funcs.append(pl.min(col).alias(feature_column))
+                        elif window_func == _MAX_WINDOW_FUNCTION:
+                            agg_funcs.append(pl.max(col).alias(feature_column))
+                        elif window_func == _SKEW_WINDOW_FUNCTION:
+                            agg_funcs.append(pl.col(col).skew().alias(feature_column))
+                        elif window_func == _KURT_WINDOW_FUNCTION:
+                            agg_funcs.append(
+                                pl.col(col).kurtosis().alias(feature_column)
+                            )
+                        elif window_func == _SEM_WINDOW_FUNCTION:
+                            agg_funcs.append(
+                                (pl.std(col) / pl.len().sqrt()).alias(feature_column)
+                            )
+                        elif window_func == _RANK_WINDOW_FUNCTION:
+                            agg_funcs.append(pl.col(col).rank().alias(feature_column))
+                        else:
+                            raise ValueError(
+                                f"Unrecognised window function: {window_func}"
+                            )
+                        window_cols.add(feature_column)
+                win_df = id_df
+                if window is not None:
+                    win_df = id_df.rolling(index_column=dt_column, period=window).agg(
+                        agg_funcs
                     )
-                    relevant_columns.add(feature_column)
-                    df[feature_column] = None
+                else:
+                    win_df = win_df.select(agg_funcs)
+                win_df = win_df.with_columns(
+                    [pl.col(col).shift(1) for col in window_cols]
+                )
+                win_df = win_df.with_columns(id_df[_ROW_IDX_COLUMN])
+                id_df = id_df.join(win_df, on=_ROW_IDX_COLUMN, how="left")
+                existing_right_cols = [
+                    col for col in window_cols if f"{col}_right" in id_df.columns
+                ]
+                id_df = id_df.with_columns(
+                    [
+                        pl.coalesce([pl.col(f"{col}_right"), pl.col(col)]).alias(col)
+                        for col in existing_right_cols
+                    ]
+                ).drop(existing_right_cols)
+            for lag in _LAGS:
+                id_df = id_df.with_columns(
+                    [
+                        pl.col(col)
+                        .shift(lag)
+                        .alias(DELIMITER.join([col, _LAG_COLUMN, str(lag)]))
+                        for col in all_expected_cols
+                        if col
+                        not in {dt_column, _ROW_IDX_COLUMN, _COLUMN_PREFIX_COLUMN}
+                    ]
+                )
+            # Find all the prefixes used for the identifier
+            prefixes = (
+                id_df.select(_COLUMN_PREFIX_COLUMN).unique().to_series().to_list()
+            )
+            for prefix in prefixes:
+                # Merge the prefixes back into the main dataframe
+                prefix_df = id_df.filter(pl.col(_COLUMN_PREFIX_COLUMN) == prefix)
+                col_map = {
+                    x: prefix + x
+                    for x in prefix_df.columns
+                    if x not in {dt_column, _COLUMN_PREFIX_COLUMN, _ROW_IDX_COLUMN}
+                }
+                prefix_df = prefix_df.rename(col_map).drop(
+                    [_COLUMN_PREFIX_COLUMN, dt_column]
+                )
+                pl_df = pl_df.join(prefix_df, on=_ROW_IDX_COLUMN, how="left")
+                existing_right_cols = [
+                    col for col in pl_df.columns if col + "_right" in pl_df.columns
+                ]
+                pl_df = pl_df.with_columns(
+                    [
+                        pl.coalesce([pl.col(f"{col}_right"), pl.col(col)]).alias(col)
+                        for col in existing_right_cols
+                    ]
+                ).drop(existing_right_cols)
 
-    identifier_ts: dict[str, pd.DataFrame] = _extract_identifier_timeseries(
-        df, identifiers, dt_column
-    )
-    identifier_ts = _process_identifier_ts(identifier_ts, windows, dt_column)
-    df = _write_ts_features(df, identifier_ts, identifiers)
-    return df[sorted(df.columns.values)].copy()
+    return pl_df.to_pandas()
