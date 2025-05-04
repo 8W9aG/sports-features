@@ -222,31 +222,6 @@ def timeseries_process(
     tqdm.pandas(desc="Progress")
     simplefilter(action="ignore", category=pd.errors.PerformanceWarning)
 
-    # Write the columns to the dataframe ahead of time.
-    relevant_columns = {dt_column}
-    for identifier in identifiers:
-        if identifier.entity_type not in {EntityType.TEAM, EntityType.PLAYER}:
-            continue
-        relevant_columns.add(identifier.column)
-        for column in identifier.numeric_action_columns:
-            relevant_columns.add(column)
-            for lag in _LAGS:
-                feature_column = DELIMITER.join([column, _LAG_COLUMN, str(lag)])
-                relevant_columns.add(feature_column)
-                df[feature_column] = None
-            for window in windows:
-                window_col = (
-                    str(window.days) + _DAYS_COLUMN_SUFFIX
-                    if window is not None
-                    else _ALL_SUFFIX
-                )
-                for window_function in _WINDOW_FUNCTIONS:
-                    feature_column = DELIMITER.join(
-                        [column, window_function, window_col]
-                    )
-                    relevant_columns.add(feature_column)
-                    df[feature_column] = None
-
     identifier_ts: dict[str, pd.DataFrame] = _extract_identifier_timeseries(
         df, identifiers, dt_column
     )
