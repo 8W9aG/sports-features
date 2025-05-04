@@ -3,7 +3,6 @@
 # pylint: disable=duplicate-code,too-many-branches,too-many-nested-blocks
 
 import datetime
-import functools
 import logging
 from warnings import simplefilter
 
@@ -45,7 +44,7 @@ _WINDOW_FUNCTIONS = [
     _SEM_WINDOW_FUNCTION,
     _RANK_WINDOW_FUNCTION,
 ]
-_PANDARALLEL_STEP = 20000
+_COLUMN_PREFIX_COLUMN = "sportsfeatures_column_prefix"
 
 
 def _extract_identifier_timeseries(
@@ -70,6 +69,7 @@ def _extract_identifier_timeseries(
             key = DELIMITER.join([identifier.entity_type, identifier_id])
             df = identifier_ts.get(key, pd.DataFrame())
             df.loc[row.name, dt_column] = row[dt_column]  # type: ignore
+            df.loc[row.name, _COLUMN_PREFIX_COLUMN] = identifier.column_prefix  # type: ignore
             for feature_column in identifier.numeric_action_columns:
                 if feature_column not in row:
                     continue
@@ -97,7 +97,12 @@ def _process_identifier_ts(
     for identifier_id in tqdm(identifier_ts):
         identifier_df = identifier_ts[identifier_id]
         original_identifier_df = identifier_df.copy()
-        drop_columns = original_identifier_df.columns.values
+        drop_columns = [
+            x
+            for x in original_identifier_df.columns.values.tolist()
+            if x != _COLUMN_PREFIX_COLUMN
+        ]
+        new_columns = []
         for lag in _LAGS:
             lag_df = (
                 original_identifier_df.shift(lag - 1)
@@ -105,9 +110,10 @@ def _process_identifier_ts(
                 else original_identifier_df
             )
             for column in drop_columns:
-                if column == dt_column:
+                if column in {dt_column, _COLUMN_PREFIX_COLUMN}:
                     continue
                 feature_column = DELIMITER.join([column, _LAG_COLUMN, str(lag)])
+                new_columns.append(feature_column)
                 identifier_df[feature_column] = lag_df[column]
 
         for window in windows:
@@ -122,7 +128,7 @@ def _process_identifier_ts(
                 else _ALL_SUFFIX
             )
             for column in drop_columns:
-                if column == dt_column:
+                if column in {dt_column, _COLUMN_PREFIX_COLUMN}:
                     continue
                 for window_function in _WINDOW_FUNCTIONS:
                     feature_column = DELIMITER.join(
@@ -157,11 +163,11 @@ def _process_identifier_ts(
                             raise ValueError(
                                 f"Unrecognised window function: {window_function}"
                             )
+                        new_columns.append(feature_column)
                     except pd.errors.DataError as exc:
                         logging.warning(str(exc))
-        identifier_ts[identifier_id] = (
-            identifier_df.shift(1).drop(columns=drop_columns).copy()
-        )
+        identifier_df[new_columns] = identifier_df[new_columns].shift(1)
+        identifier_ts[identifier_id] = identifier_df.drop(columns=drop_columns).copy()
 
     return identifier_ts
 
@@ -169,44 +175,19 @@ def _process_identifier_ts(
 def _write_ts_features(
     df: pd.DataFrame,
     identifier_ts: dict[str, pd.DataFrame],
-    identifiers: list[Identifier],
 ) -> pd.DataFrame:
-    def write_timeseries_features(
-        row: pd.Series,
-        identifier_ts: dict[str, pd.DataFrame],
-        identifiers: list[Identifier],
-    ) -> pd.Series:
-        for identifier in identifiers:
-            if identifier.column not in row:
-                continue
-            identifier_id = row[identifier.column]
-            if pd.isnull(identifier_id):
-                continue
-            key = DELIMITER.join([identifier.entity_type, identifier_id])
-            if key not in identifier_ts:
-                continue
-            identifier_df = identifier_ts[key]
-            if identifier_df.empty:
-                continue
-            identifier_row = identifier_df.loc[row.name]  # type: ignore
-            for column in identifier_df.columns.values:
-                new_column = identifier.column_prefix + column
-                row[new_column] = identifier_row[column]
-
-        return row
-
-    for i in tqdm(range(0, len(df), _PANDARALLEL_STEP), desc="Processing chunks"):
-        df.iloc[i : i + _PANDARALLEL_STEP] = df.iloc[
-            i : i + _PANDARALLEL_STEP
-        ].parallel_apply(
-            functools.partial(
-                write_timeseries_features,
-                identifier_ts=identifier_ts,
-                identifiers=identifiers,
-            ),
-            axis=1,
-        )  # type: ignore
-
+    for df_ts in tqdm(identifier_ts.values(), desc="Writing TS features:"):
+        col_names = df_ts.columns.values.tolist()
+        for row in df_ts.itertuples():
+            cols: list[str] = list(row._fields)[1:]  # type: ignore
+            col_map = {
+                x: col_names[int(x[1:]) - 1] if x.startswith("_") else x  # type: ignore
+                for x in cols  # type: ignore
+            }
+            cols.remove(_COLUMN_PREFIX_COLUMN)
+            column_prefix = getattr(row, _COLUMN_PREFIX_COLUMN)
+            df_cols = [column_prefix + col_map.get(x, x) for x in cols]
+            df.loc[row.Index, df_cols] = [getattr(row, x) for x in cols]  # type: ignore
     return df
 
 
@@ -251,5 +232,5 @@ def timeseries_process(
         df, identifiers, dt_column
     )
     identifier_ts = _process_identifier_ts(identifier_ts, windows, dt_column)
-    df = _write_ts_features(df, identifier_ts, identifiers)
+    df = _write_ts_features(df, identifier_ts)
     return df[sorted(df.columns.values)].copy()

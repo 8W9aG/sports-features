@@ -5,7 +5,7 @@ import unittest
 import pandas as pd
 from pandas.testing import assert_frame_equal
 
-from sportsfeatures.timeseries_process import _extract_identifier_timeseries, _process_identifier_ts
+from sportsfeatures.timeseries_process import _extract_identifier_timeseries, _process_identifier_ts, _COLUMN_PREFIX_COLUMN
 from sportsfeatures.identifier import Identifier
 from sportsfeatures.entity_type import EntityType
 
@@ -56,6 +56,7 @@ class TestTimeseriesProcess(unittest.TestCase):
         }
         for key, value in expected_ts_dfs.items():
             compare_value = ts_dfs[key]
+            compare_value = compare_value.drop(columns=[_COLUMN_PREFIX_COLUMN])
             assert_frame_equal(value, compare_value)
 
     def test_process_identifier_ts(self):
