@@ -50,7 +50,7 @@ class TestBetProcess(unittest.TestCase):
         self.assertListEqual(odds, [
             4.0,
             8.0,
-            1.3166666666666667,
+            1.3333333333333333,
             2.203333333333333,
             1.3050000000000002,
             1.4849999999999999,
@@ -73,7 +73,7 @@ class TestBetProcess(unittest.TestCase):
         self.assertListEqual(odds, [
             2.29,
             1.03,
-            3.28,
+            3.266666666666667,
             1.6266666666666667,
             3.2,
             2.425,

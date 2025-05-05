@@ -65,9 +65,15 @@ def bet_process(
                 if bet.dt_column is None or bet.dt_column not in row:
                     dt = game_dt - datetime.timedelta(hours=1)
                 else:
-                    dt = row[bet.dt_column]
+                    dt = pd.to_datetime(row[bet.dt_column])
                     if pd.isnull(dt):
                         dt = game_dt - datetime.timedelta(hours=1)
+                try:
+                    dt = pd.Timestamp(dt).tz_localize("UTC")
+                except TypeError:
+                    dt = pd.Timestamp(dt).tz_convert("UTC")
+                if dt > game_dt - datetime.timedelta(hours=1):
+                    continue
                 odds_data.append(odds)
                 bookies_data.append(bookie_id)
                 dts_data.append(dt)
