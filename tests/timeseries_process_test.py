@@ -5,7 +5,7 @@ import unittest
 import pandas as pd
 from pandas.testing import assert_frame_equal
 
-from sportsfeatures.timeseries_process import _extract_identifier_timeseries, _process_identifier_ts
+from sportsfeatures.timeseries_process import _extract_identifier_timeseries, _process_identifier_ts, _COLUMN_PREFIX_COLUMN
 from sportsfeatures.identifier import Identifier
 from sportsfeatures.entity_type import EntityType
 
@@ -46,10 +46,12 @@ class TestTimeseriesProcess(unittest.TestCase):
         ts_dfs = _extract_identifier_timeseries(df, identifiers, dt_column)
         expected_ts_dfs = {
             "_".join([EntityType.TEAM, team_0_id]): pd.DataFrame(data={
+                _COLUMN_PREFIX_COLUMN: [team_0_column_prefix, team_1_column_prefix, team_0_column_prefix],
                 dt_column: df[dt_column],
                 "/kicks": [10.0, 40.0, 30.0],
             }),
             "_".join([EntityType.TEAM, team_1_id]): pd.DataFrame(data={
+                _COLUMN_PREFIX_COLUMN: [team_1_column_prefix, team_0_column_prefix, team_1_column_prefix],
                 dt_column: df[dt_column],
                 "/kicks": [20.0, 20.0, 60.0],
             })
@@ -64,10 +66,12 @@ class TestTimeseriesProcess(unittest.TestCase):
             "team_0": pd.DataFrame(data={
                 "/kicks": [10.0, 20.0, 30.0],
                 dt_column: [datetime.datetime(2022, 1, 1), datetime.datetime(2022, 1, 2), datetime.datetime(2022, 1, 3)],
+                _COLUMN_PREFIX_COLUMN: ["/teams/0", "/teams/0", "/teams/0"]
             })
         }
         identifier_ts = _process_identifier_ts(identifier_ts, [datetime.timedelta(days=20), None], dt_column)
         test_df = pd.DataFrame(data={
+            _COLUMN_PREFIX_COLUMN: ["/teams/0", "/teams/0", "/teams/0"],
             "/kicks_lag_1": [None, 10.0, 20.0],
             "/kicks_lag_2": [None, None, 10.0],
             "/kicks_lag_4": [None, None, None],
@@ -109,6 +113,7 @@ class TestTimeseriesProcess(unittest.TestCase):
         dt_column = "dt"
         identifier_ts = {
             "team_0": pd.DataFrame(data={
+                _COLUMN_PREFIX_COLUMN: ["/teams/0", "/teams/0", "/teams/0", "/teams/0", "/teams/0", "/teams/0"],
                 "/kicks": [10.0, 20.0, 30.0, None, None, 40.0],
                 dt_column: [
                     datetime.datetime(2022, 1, 1),
@@ -127,6 +132,7 @@ class TestTimeseriesProcess(unittest.TestCase):
         dt_column = "dt"
         identifier_ts = {
             "team_0": pd.DataFrame(data={
+                _COLUMN_PREFIX_COLUMN: ["/teams/0", "/teams/0", "/teams/0", "/teams/0", "/teams/0", "/teams/0"],
                 "/kicks": ["all", "all", "all", "all", "all", "all"],
                 dt_column: [
                     datetime.datetime(2022, 1, 1),
