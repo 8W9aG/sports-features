@@ -151,6 +151,8 @@ def timeseries_process(
                     [pl.col(col).shift(1) for col in window_cols]
                 )
                 win_df = win_df.with_columns(id_df[_ROW_IDX_COLUMN])
+                if dt_column in win_df.columns:
+                    win_df = win_df.drop(dt_column)
                 id_df = id_df.join(win_df, on=_ROW_IDX_COLUMN, how="left")
                 existing_right_cols = [
                     col for col in window_cols if f"{col}_right" in id_df.columns
@@ -184,18 +186,17 @@ def timeseries_process(
                     for x in prefix_df.columns
                     if x not in {dt_column, _COLUMN_PREFIX_COLUMN, _ROW_IDX_COLUMN}
                 }
-                prefix_df = prefix_df.rename(col_map).drop(
-                    [_COLUMN_PREFIX_COLUMN, dt_column]
+                prefix_df = prefix_df.drop([_COLUMN_PREFIX_COLUMN, dt_column]).rename(
+                    col_map
                 )
                 pl_df = pl_df.join(prefix_df, on=_ROW_IDX_COLUMN, how="left")
-                existing_right_cols = [
-                    col for col in pl_df.columns if col + "_right" in pl_df.columns
-                ]
                 pl_df = pl_df.with_columns(
                     [
                         pl.coalesce([pl.col(f"{col}_right"), pl.col(col)]).alias(col)
-                        for col in existing_right_cols
+                        for col in prefix_df.columns
+                        if col in pl_df.columns and col + "_right" in pl_df.columns
                     ]
-                ).drop(existing_right_cols)
+                )
+                pl_df = pl_df.drop([x for x in pl_df.columns if x.endswith("_right")])
 
-    return pl_df.to_pandas()
+    return pl_df.drop(_ROW_IDX_COLUMN).to_pandas()
