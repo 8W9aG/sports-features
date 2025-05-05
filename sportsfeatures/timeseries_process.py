@@ -79,6 +79,12 @@ def timeseries_process(
                     )
                 )
                 identifier_df = identifier_df.with_columns(
+                    [
+                        pl.col(col).cast(pl.Float64).alias(col)
+                        for col in list(col_map.values())
+                    ]
+                )
+                identifier_df = identifier_df.with_columns(
                     pl.lit(identifier.column_prefix).alias(_COLUMN_PREFIX_COLUMN)
                 )
                 identifier_dfs.append(identifier_df)
