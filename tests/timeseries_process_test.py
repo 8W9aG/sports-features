@@ -47,7 +47,7 @@ class TestTimeseriesProcess(unittest.TestCase):
                 team_1_column_prefix,
             ),
         ]
-        ts_dfs = timeseries_process(df, identifiers, [datetime.timedelta(days=365), None], dt_column) d
+        ts_dfs = timeseries_process(df, identifiers, [datetime.timedelta(days=365), None], dt_column)
         expected_ts_dfs = pd.read_parquet(os.path.join(self.dir, "ts_df.parquet"))
         ts_dfs = ts_dfs[expected_ts_dfs.columns.values.tolist()]
         assert_frame_equal(expected_ts_dfs, ts_dfs)
