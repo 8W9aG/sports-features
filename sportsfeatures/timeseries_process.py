@@ -101,7 +101,6 @@ def _process_identifier_ts(
         original_identifier_df = identifier_df.copy()
         drop_columns = original_identifier_df.columns.values.tolist()
         drop_columns.remove(_COLUMN_PREFIX_COLUMN)
-        print(drop_columns)
         for lag in _LAGS:
             lag_df = (
                 original_identifier_df.shift(lag - 1)
@@ -188,7 +187,6 @@ def _write_ts_features(
                 x: row[count + 1]
                 for count, x in enumerate(identifier_df.columns.values.tolist())
             }
-            print(row_dict)
             column_prefix = row_dict[_COLUMN_PREFIX_COLUMN]
             for column, value in row_dict.items():
                 if column in {_COLUMN_PREFIX_COLUMN, dt_column}:
