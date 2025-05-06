@@ -13,14 +13,13 @@ Python 3.11.6:
 - [openskill](https://openskill.me/en/latest/index.html)
 - [pandas](https://pandas.pydata.org/)
 - [feature-engine](https://feature-engine.trainindata.com/en/latest/)
-- [pandarallel](https://nalepae.github.io/pandarallel/)
 - [tqdm](https://github.com/tqdm/tqdm)
 - [scikit-learn](https://scikit-learn.org/)
 - [geopy](https://geopy.readthedocs.io/en/stable/)
 - [numpy](https://numpy.org/)
 - [pytest-is-running](https://github.com/adamchainz/pytest-is-running)
 - [joblib](https://joblib.readthedocs.io/en/stable/)
-- [polars](https://pola.rs/)
+- [timeseries-features](https://github.com/8W9aG/timeseries-features)
 
 ## Raison D'être :thought_balloon:
 
