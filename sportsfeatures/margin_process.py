@@ -1,9 +1,11 @@
 """Calculate margin features."""
 
-# pylint: disable=too-many-branches
+# pylint: disable=too-many-locals,too-many-branches
+
+import sys
 
 import pandas as pd
-from tqdm import tqdm
+import tqdm
 
 from .columns import DELIMITER
 from .identifier import Identifier
@@ -11,83 +13,66 @@ from .identifier import Identifier
 
 def margin_process(df: pd.DataFrame, identifiers: list[Identifier]) -> pd.DataFrame:
     """Process margins between teams."""
-    tqdm.pandas(desc="Margins Features")
+    df_dict: dict[str, list[float | None]] = {}
+    df_cols = df.columns.values.tolist()
     identifiers_ts: dict[str, dict[str, float]] = {}
 
-    def record_margin(row: pd.Series) -> pd.Series:
-        nonlocal identifiers
-        nonlocal identifiers_ts
+    written_columns = set()
+    for row in tqdm.tqdm(df.itertuples(name=None), desc="Margin Processing"):
+        row_dict = {x: row[count + 1] for count, x in enumerate(df_cols)}
 
-        entity_dicts: dict[str, dict[str, dict[str, float]]] = {}
-
+        # Write lagged data
         for identifier in identifiers:
-            if identifier.column not in row:
+            identifier_id = row_dict.get(identifier.column)
+            if identifier_id is None:
                 continue
-            identifier_id = row[identifier.column]
-            if pd.isnull(identifier_id):
+            key = DELIMITER.join([identifier.entity_type, identifier_id])
+            lagged_values = identifiers_ts.get(key)
+            if lagged_values is None:
                 continue
-            entity_dict = entity_dicts.get(str(identifier.entity_type), {})
-            identifier_dict = entity_dict.get(identifier_id, {})
-            columns = {
-                x[len(identifier.column_prefix) :] for x in identifier.feature_columns
-            }
-            if identifier.points_column is not None:
-                columns.add(identifier.points_column[len(identifier.column_prefix) :])
+            for k, v in lagged_values.items():
+                col = identifier.column_prefix + k
+                if col not in df_dict:
+                    df_dict[col] = [None for _ in range(len(df))]
+                df_dict[col][row[0]] = v
+                written_columns.add(col)
+            del identifiers_ts[key]
 
-            for column in columns:
-                full_column = identifier.column_prefix + column
-                if full_column not in row:
+        # Find maximum value
+        entity_dicts: dict[str, dict[str, float]] = {}
+        for identifier in identifiers:
+            identifier_id = row_dict.get(identifier.column)
+            if identifier_id is None:
+                continue
+            entity_dict = entity_dicts.get(identifier.entity_type, {})
+            for column in identifier.numeric_action_columns:
+                value = row_dict.get(column)
+                if value is None:
                     continue
-                value = row[full_column]
-                try:
-                    identifier_dict[column] = float(value)
-                except TypeError:
-                    pass
+                feature_column = column[len(identifier.column_prefix) :]
+                entity_dict[feature_column] = max(
+                    entity_dict.get(feature_column, sys.float_info.min), value
+                )
+            entity_dicts[identifier.entity_type] = entity_dict
 
-            entity_dict[identifier_id] = identifier_dict
-            entity_dicts[str(identifier.entity_type)] = entity_dict
+        # Cache lagged data
+        for identifier in identifiers:
+            identifier_id = row_dict.get(identifier.column)
+            if identifier_id is None:
+                continue
+            feature_dict = entity_dicts[identifier.entity_type]
+            key = DELIMITER.join([identifier.entity_type, identifier_id])
+            identifier_dict = {}
+            for k, max_value in feature_dict.items():
+                full_col = identifier.column_prefix + k
+                value = row_dict[full_col]
+                abs_col = DELIMITER.join([k, "margin", "absolute"])
+                rel_col = DELIMITER.join([k, "margin", "relative"])
+                identifier_dict[abs_col] = value - max_value
+                identifier_dict[rel_col] = value / max_value
+            identifiers_ts[key] = identifier_dict
 
-        for entity_dict in entity_dicts.values():
-            max_dict: dict[str, float] = {}
-            for identifier_dict in entity_dict.values():
-                for column, value in identifier_dict.items():
-                    max_dict[column] = max(max_dict.get(column, 0.0), value)
-            for identifier_id, identifier_dict in entity_dict.items():
-                for identifier in identifiers:
-                    if identifier.column not in row:
-                        continue
-                    identifier_id_check = row[identifier.column]
-                    if pd.isnull(identifier_id_check):
-                        continue
-                    if identifier_id_check != identifier_id:
-                        continue
-                    identifier_ts_cols: dict[str, float] = identifiers_ts.get(
-                        identifier_id, {}
-                    )
-                    # Copy the old columns in
-                    for column, value in identifier_ts_cols.items():
-                        full_column = identifier.column_prefix + column
-                        row[full_column] = value
-                    identifier_ts_cols = {}
-                    # Create the new columns
-                    for column, value in identifier_dict.items():
-                        margin_absolute_column = DELIMITER.join(
-                            [column, "margin", "absolute"]
-                        )
-                        identifier_ts_cols[margin_absolute_column] = (
-                            value - max_dict[column]
-                        )
-                        margin_relative_column = DELIMITER.join(
-                            [column, "margin", "relative"]
-                        )
-                        identifier_ts_cols[margin_relative_column] = (
-                            0.0
-                            if max_dict[column] == 0.0
-                            else (value / max_dict[column])
-                        )
-                    identifiers_ts[identifier_id] = identifier_ts_cols
-                    break
+    for column in written_columns:
+        df[column] = df_dict[column]
 
-        return row
-
-    return df.progress_apply(record_margin, axis=1).copy()  # type: ignore
+    return df[sorted(df.columns.values.tolist())]

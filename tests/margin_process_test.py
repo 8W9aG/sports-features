@@ -1,5 +1,6 @@
 """Tests for the margin process function."""
 import datetime
+import os
 import unittest
 
 import pandas as pd
@@ -11,6 +12,9 @@ from sportsfeatures.entity_type import EntityType
 
 
 class TestMarginProcess(unittest.TestCase):
+
+    def setUp(self):
+        self.dir = os.path.dirname(__file__)
 
     def test_margin_process(self):
         team_0_column_prefix = "teams/0"
@@ -46,5 +50,5 @@ class TestMarginProcess(unittest.TestCase):
             ),
         ]
         new_df = margin_process(df, identifiers)
-        print(new_df)
-        print(new_df.columns.values)
+        expected_df = pd.read_parquet(os.path.join(self.dir, "margin.parquet"))
+        assert_frame_equal(new_df, expected_df)
