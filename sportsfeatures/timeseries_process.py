@@ -115,7 +115,7 @@ def _write_ts_features(
             }
             column_prefix = row_dict[_COLUMN_PREFIX_COLUMN]
             for column, value in row_dict.items():
-                if column in {_COLUMN_PREFIX_COLUMN, dt_column}:
+                if column in {_COLUMN_PREFIX_COLUMN, dt_column, ""}:
                     continue
                 key = column_prefix + column
                 if key not in df_dict:

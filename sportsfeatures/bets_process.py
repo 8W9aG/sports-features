@@ -77,30 +77,30 @@ def bet_process(
                 odds_data.append(odds)
                 bookies_data.append(bookie_id)
                 dts_data.append(dt)
-            df = pd.DataFrame(
+            bet_df = pd.DataFrame(
                 data={
                     "odds": odds_data,
                     "bookie": bookies_data,
                     "dt": dts_data,
                 }
             )
-            if df.empty:
+            if bet_df.empty:
                 continue
-            df["dt"] = _force_utc_aware(df["dt"])
-            df = df.sort_values(by="dt")
-            odds_max = df["odds"].max()
-            odds_min = df["odds"].min()
-            earliest_odds = df["odds"].iloc[0]
-            latest_odds = df["odds"].iloc[-1]
-            earliest_dt = df["dt"].iloc[0]
-            latest_dt = df["dt"].iloc[-1]
+            bet_df[dt_column] = _force_utc_aware(bet_df[dt_column])
+            bet_df = bet_df.sort_values(by=dt_column)
+            odds_max = bet_df["odds"].max()
+            odds_min = bet_df["odds"].min()
+            earliest_odds = bet_df["odds"].iloc[0]
+            latest_odds = bet_df["odds"].iloc[-1]
+            earliest_dt = bet_df[dt_column].iloc[0]
+            latest_dt = bet_df[dt_column].iloc[-1]
 
             direction_changes = 0
             big_shifts = 0
             consensus_flips = 0
             resampled_df = pd.DataFrame()
-            for bookie in df["bookie"].unique():
-                bookie_df = df[df["bookie"] == bookie]
+            for bookie in bet_df["bookie"].unique():
+                bookie_df = bet_df[bet_df["bookie"] == bookie]
                 bookies_odds = bookie_df["odds"].to_list()
                 current_odds = None
                 current_direction = None
@@ -135,22 +135,22 @@ def bet_process(
             resampled_df = resampled_df.resample("5T").last()
             resampled_df = resampled_df.ffill()
 
-            ffill_df = df.set_index("dt").ffill()
+            ffill_df = bet_df.set_index("dt").ffill()
             oneday_df = ffill_df[ffill_df.index > game_dt - datetime.timedelta(days=1)]
             final_odds = resampled_df.mean(axis=1).to_list()[-1]
 
             row[DELIMITER.join([identifier.column_prefix, "odds", "max"])] = odds_max
             row[DELIMITER.join([identifier.column_prefix, "odds", "min"])] = odds_min
-            row[DELIMITER.join([identifier.column_prefix, "odds", "mean"])] = df[
+            row[DELIMITER.join([identifier.column_prefix, "odds", "mean"])] = bet_df[
                 "odds"
             ].mean()
-            row[DELIMITER.join([identifier.column_prefix, "odds", "median"])] = df[
+            row[DELIMITER.join([identifier.column_prefix, "odds", "median"])] = bet_df[
                 "odds"
             ].median()
             row[DELIMITER.join([identifier.column_prefix, "odds", "spread"])] = (
                 odds_max - odds_min
             )
-            row[DELIMITER.join([identifier.column_prefix, "odds", "bookies"])] = df[
+            row[DELIMITER.join([identifier.column_prefix, "odds", "bookies"])] = bet_df[
                 "bookie"
             ].nunique()
             row[DELIMITER.join([identifier.column_prefix, "odds", "roc"])] = (
@@ -162,7 +162,9 @@ def bet_process(
             row[DELIMITER.join([identifier.column_prefix, "odds", "directchanges"])] = (
                 direction_changes
             )
-            row[DELIMITER.join([identifier.column_prefix, "odds", "samples"])] = len(df)
+            row[DELIMITER.join([identifier.column_prefix, "odds", "samples"])] = len(
+                bet_df
+            )
             # row[DELIMITER.join([identifier.column_prefix, "odds", "ewm"])] = (
             #    resampled_df.mean(axis=1).ewm(alpha=0.2, adjust=False).mean()
             # )
