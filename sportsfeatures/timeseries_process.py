@@ -3,6 +3,7 @@
 # pylint: disable=duplicate-code,too-many-branches,too-many-nested-blocks
 
 import datetime
+import multiprocessing
 from warnings import simplefilter
 
 import pandas as pd
@@ -17,6 +18,24 @@ from .entity_type import EntityType
 from .identifier import Identifier
 
 _COLUMN_PREFIX_COLUMN = "_column_prefix"
+
+
+def _pool_process(
+    identifier_id: str,
+    df: pd.DataFrame,
+    features: list[Feature],
+    dt_column: str,
+) -> tuple[str, pd.DataFrame, pd.Series]:
+    original_identifier_df = df.copy()
+    drop_columns = df.columns.values.tolist()
+    if "" in drop_columns:
+        drop_columns.remove("")
+    drop_columns.remove(_COLUMN_PREFIX_COLUMN)
+    return (
+        identifier_id,
+        process(df, features=features, on=dt_column).drop(columns=drop_columns).copy(),
+        original_identifier_df[_COLUMN_PREFIX_COLUMN],
+    )
 
 
 def _extract_identifier_timeseries(
@@ -81,18 +100,17 @@ def _process_identifier_ts(
         )
         for x in windows
     ]
-    for identifier_id in tqdm(identifier_ts):
-        identifier_df = identifier_ts[identifier_id]
-        original_identifier_df = identifier_df.copy()
-        drop_columns = original_identifier_df.columns.values.tolist()
-        if "" in drop_columns:
-            drop_columns.remove("")
-        drop_columns.remove(_COLUMN_PREFIX_COLUMN)
-        identifier_df = process(identifier_df, features=features, on=dt_column)
-        identifier_ts[identifier_id] = identifier_df.drop(columns=drop_columns).copy()
-        identifier_ts[identifier_id][_COLUMN_PREFIX_COLUMN] = original_identifier_df[
-            _COLUMN_PREFIX_COLUMN
-        ]
+    with multiprocessing.Pool() as pool:
+        for identifier_id, identifier_df, column_prefix_series in tqdm(
+            pool.starmap(
+                _pool_process,
+                [(k, v, features, dt_column) for k, v in identifier_ts.items()],
+            ),
+            desc="Timeseries Processing",
+            total=len(identifier_ts),
+        ):
+            identifier_ts[identifier_id] = identifier_df
+            identifier_ts[identifier_id][_COLUMN_PREFIX_COLUMN] = column_prefix_series
 
     return identifier_ts
 
