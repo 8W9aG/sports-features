@@ -101,13 +101,12 @@ def _process_identifier_ts(
         for x in windows
     ]
     with multiprocessing.Pool() as pool:
-        for identifier_id, identifier_df, column_prefix_series in tqdm(
-            pool.starmap(
-                _pool_process,
+        for identifier_id, identifier_df, column_prefix_series in pool.starmap(
+            _pool_process,
+            tqdm(
                 [(k, v, features, dt_column) for k, v in identifier_ts.items()],
+                desc="Timeseries Processing",
             ),
-            desc="Timeseries Processing",
-            total=len(identifier_ts),
         ):
             identifier_ts[identifier_id] = identifier_df
             identifier_ts[identifier_id][_COLUMN_PREFIX_COLUMN] = column_prefix_series

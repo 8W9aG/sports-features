@@ -1,8 +1,6 @@
 """Process the distance between two locations."""
 
-# pylint: disable=duplicate-code,too-many-branches
-
-import functools
+# pylint: disable=duplicate-code,too-many-branches,too-many-locals,too-many-statements
 
 import geopy.distance  # type: ignore
 import pandas as pd
@@ -15,71 +13,78 @@ from .identifier import Identifier
 
 def distance_process(df: pd.DataFrame, identifiers: list[Identifier]) -> pd.DataFrame:
     """Process a dataframe for offensive efficiency."""
-    tqdm.pandas(desc="Distance Features")
     last_identifier_locations: dict[str, tuple[float, float]] = {}
     team_identifiers = [x for x in identifiers if x.entity_type == EntityType.TEAM]
     player_identifiers = [x for x in identifiers if x.entity_type == EntityType.PLAYER]
     venue_identifiers = [x for x in identifiers if x.entity_type == EntityType.VENUE]
+    df_dict: dict[str, list[float | None]] = {}
+    df_cols = df.columns.values.tolist()
 
-    def record_distance(
-        row: pd.Series,
-        team_identifiers: list[Identifier],
-        player_identifiers: list[Identifier],
-        venue_identifiers: list[Identifier],
-    ) -> pd.Series:
-        nonlocal identifiers
-        nonlocal last_identifier_locations
+    written_columns = set()
+    for row in tqdm(
+        df.itertuples(name=None), desc="Distance Processing", total=len(df)
+    ):
+        row_dict = {x: row[count + 1] for count, x in enumerate(df_cols)}
 
         current_location = None
         for venue_identifier in venue_identifiers:
             if venue_identifier.latitude_column is None:
                 continue
-            if venue_identifier.latitude_column not in row:
+            if venue_identifier.latitude_column not in row_dict:
                 continue
-            latitude = row[venue_identifier.latitude_column]
-            if pd.isnull(latitude):
+            latitude = row_dict[venue_identifier.latitude_column]
+            if latitude is None:
                 continue
             if venue_identifier.longitude_column is None:
                 continue
-            if venue_identifier.longitude_column not in row:
+            if venue_identifier.longitude_column not in row_dict:
                 continue
-            longitude = row[venue_identifier.longitude_column]
-            if pd.isnull(longitude):
+            longitude = row_dict[venue_identifier.longitude_column]
+            if longitude is None:
                 continue
             current_location = (latitude, longitude)
         if current_location is None:
-            return row
+            continue
 
         for identifier in team_identifiers + player_identifiers:
-            if identifier.column not in row:
+            if identifier.column not in row_dict:
                 continue
-            identifier_id = row[identifier.column]
-            if pd.isnull(identifier_id):
+            identifier_id = row_dict[identifier.column]
+            if identifier_id is None:
                 continue
             if not isinstance(identifier_id, str):
                 continue
             key = "_".join([str(identifier.entity_type), identifier_id])
             last_location = last_identifier_locations.get(key)
             if last_location is not None:
-                row[DELIMITER.join([identifier.column_prefix, "latitudediff"])] = abs(
+                latitude_diff_column = DELIMITER.join(
+                    [identifier.column_prefix, "latitudediff"]
+                )
+                if latitude_diff_column not in df_dict:
+                    df_dict[latitude_diff_column] = [None for _ in range(len(df))]
+                written_columns.add(latitude_diff_column)
+                df_dict[latitude_diff_column][row[0]] = abs(
                     last_location[0] - current_location[0]
                 )
-                row[DELIMITER.join([identifier.column_prefix, "longitudediff"])] = abs(
+                longitude_diff_column = DELIMITER.join(
+                    [identifier.column_prefix, "longitudediff"]
+                )
+                if longitude_diff_column not in df_dict:
+                    df_dict[longitude_diff_column] = [None for _ in range(len(df))]
+                written_columns.add(longitude_diff_column)
+                df_dict[longitude_diff_column][row[0]] = abs(
                     last_location[1] - current_location[1]
                 )
-                row[DELIMITER.join([identifier.column_prefix, "distance"])] = (
-                    geopy.distance.geodesic(last_location, current_location).km
-                )
+                distance_column = DELIMITER.join([identifier.column_prefix, "distance"])
+                if distance_column not in df_dict:
+                    df_dict[distance_column] = [None for _ in range(len(df))]
+                df_dict[distance_column][row[0]] = geopy.distance.geodesic(
+                    last_location, current_location
+                ).km
+                written_columns.add(distance_column)
             last_identifier_locations[key] = current_location
 
-        return row
+    for column in written_columns:
+        df[column] = df_dict[column]
 
-    return df.progress_apply(
-        functools.partial(
-            record_distance,
-            team_identifiers=team_identifiers,
-            player_identifiers=player_identifiers,
-            venue_identifiers=venue_identifiers,
-        ),
-        axis=1,
-    ).copy()  # type: ignore
+    return df[sorted(df.columns.values.tolist())].copy()
