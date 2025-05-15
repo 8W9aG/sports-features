@@ -71,42 +71,43 @@ class TestTimeseriesProcess(unittest.TestCase):
         }
         identifier_ts = _process_identifier_ts(identifier_ts, [datetime.timedelta(days=20), None], dt_column)
         test_df = pd.DataFrame(data={
-            "/kicks_count_20days": [None, 1.0, 2.0],
-            "/kicks_count_all": [None, 1.0, 2.0],
-            "/kicks_kurt_20days": [None, None, None],
-            "/kicks_kurt_all": [None, None, None],
-            "/kicks_lag_1": [None, 10.0, 20.0],
-            "/kicks_lag_2": [None, None, 10.0],
-            "/kicks_lag_4": [None, None, None],
-            "/kicks_lag_8": [None, None, None],
-            "/kicks_max_20days": [None, 10.0, 20.0],
-            "/kicks_max_all": [None, 10.0, 20.0],
-            "/kicks_mean_20days": [None, 10.0, 15.0],
-            "/kicks_mean_all": [None, 10.0, 15.0],
-            "/kicks_median_20days": [None, 10.0, 15.0],
-            "/kicks_median_all": [None, 10.0, 15.0],
-            "/kicks_min_20days": [None, 10.0, 10.0],
-            "/kicks_min_all": [None, 10.0, 10.0],
-            "/kicks_rank_20days": [None, 1.0, 2.0],
-            "/kicks_rank_all": [None, 1.0, 2.0],
-            "/kicks_sem_20days": [None, None, 7.071068],
-            "/kicks_sem_all": [None, None, 7.071068],
-            "/kicks_skew_20days": [None, None, None],
-            "/kicks_skew_all": [None, None, None],
-            "/kicks_std_20days": [None, None, 7.071068],
-            "/kicks_std_all": [None, None, 7.071068],
-            "/kicks_sum_20days": [None, 10.0, 30.0],
-            "/kicks_sum_all": [None, 10.0, 30.0],
-            "/kicks_var_20days": [None, None, 50.0],
-            "/kicks_var_all": [None, None, 50.0],
+            "/kicks_transform_none_count_20days": [None, 1.0, 2.0],
+            "/kicks_transform_none_count_all": [None, 1.0, 2.0],
+            "/kicks_transform_none_kurt_20days": [None, None, None],
+            "/kicks_transform_none_kurt_all": [None, None, None],
+            "/kicks_transform_none_lag_1": [None, 10.0, 20.0],
+            "/kicks_transform_none_lag_2": [None, None, 10.0],
+            "/kicks_transform_none_lag_4": [None, None, None],
+            "/kicks_transform_none_lag_8": [None, None, None],
+            "/kicks_transform_none_max_20days": [None, 10.0, 20.0],
+            "/kicks_transform_none_max_all": [None, 10.0, 20.0],
+            "/kicks_transform_none_mean_20days": [None, 10.0, 15.0],
+            "/kicks_transform_none_mean_all": [None, 10.0, 15.0],
+            "/kicks_transform_none_median_20days": [None, 10.0, 15.0],
+            "/kicks_transform_none_median_all": [None, 10.0, 15.0],
+            "/kicks_transform_none_min_20days": [None, 10.0, 10.0],
+            "/kicks_transform_none_min_all": [None, 10.0, 10.0],
+            "/kicks_transform_none_rank_20days": [None, 1.0, 2.0],
+            "/kicks_transform_none_rank_all": [None, 1.0, 2.0],
+            "/kicks_transform_none_sem_20days": [None, None, 7.071068],
+            "/kicks_transform_none_sem_all": [None, None, 7.071068],
+            "/kicks_transform_none_skew_20days": [None, None, None],
+            "/kicks_transform_none_skew_all": [None, None, None],
+            "/kicks_transform_none_std_20days": [None, None, 7.071068],
+            "/kicks_transform_none_std_all": [None, None, 7.071068],
+            "/kicks_transform_none_sum_20days": [None, 10.0, 30.0],
+            "/kicks_transform_none_sum_all": [None, 10.0, 30.0],
+            "/kicks_transform_none_var_20days": [None, None, 50.0],
+            "/kicks_transform_none_var_all": [None, None, 50.0],
             _COLUMN_PREFIX_COLUMN: ["/teams/0", "/teams/0", "/teams/0"],
         })
-        test_df["/kicks_skew_20days"] = test_df["/kicks_skew_20days"].astype(float)
-        test_df["/kicks_kurt_20days"] = test_df["/kicks_kurt_20days"].astype(float)
-        test_df["/kicks_skew_all"] = test_df["/kicks_skew_all"].astype(float)
-        test_df["/kicks_kurt_all"] = test_df["/kicks_kurt_all"].astype(float)
-        test_df["/kicks_lag_4"] = test_df["/kicks_lag_4"].astype(float)
-        test_df["/kicks_lag_8"] = test_df["/kicks_lag_8"].astype(float)
+        test_df["/kicks_transform_none_skew_20days"] = test_df["/kicks_transform_none_skew_20days"].astype(float)
+        test_df["/kicks_transform_none_kurt_20days"] = test_df["/kicks_transform_none_kurt_20days"].astype(float)
+        test_df["/kicks_transform_none_skew_all"] = test_df["/kicks_transform_none_skew_all"].astype(float)
+        test_df["/kicks_transform_none_kurt_all"] = test_df["/kicks_transform_none_kurt_all"].astype(float)
+        test_df["/kicks_transform_none_lag_4"] = test_df["/kicks_transform_none_lag_4"].astype(float)
+        test_df["/kicks_transform_none_lag_8"] = test_df["/kicks_transform_none_lag_8"].astype(float)
+        print(test_df.columns.values.tolist())
         assert_frame_equal(identifier_ts["team_0"], test_df)
 
     def test_nan_in_timeseries_process(self):

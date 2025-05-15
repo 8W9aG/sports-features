@@ -10,8 +10,10 @@ class Bet:
         self,
         odds_column: str,
         bookie_id_column: str,
+        canonical_column: str,
         dt_column: str | None = None,
     ):
         self.odds_column = odds_column
         self.bookie_id_column = bookie_id_column
         self.dt_column = dt_column
+        self.canonical_column = canonical_column

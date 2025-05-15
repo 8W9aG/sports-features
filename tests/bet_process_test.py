@@ -30,6 +30,7 @@ class TestBetProcess(unittest.TestCase):
                     odds_column=f"teams/0/odds/{x}/odds",
                     bookie_id_column=f"teams/0/odds/{x}/bookie/name",
                     dt_column=f"teams/0/odds/{x}/dt",
+                    canonical_column=f"teams/0/odds/{x}/canonical",
                 ) for x in range(28)],
             ),
             Identifier(
@@ -42,10 +43,11 @@ class TestBetProcess(unittest.TestCase):
                     odds_column=f"teams/1/odds/{x}/odds",
                     bookie_id_column=f"teams/1/odds/{x}/bookie/name",
                     dt_column=f"teams/1/odds/{x}/dt",
+                    canonical_column=f"teams/1/odds/{x}/canonical",
                 ) for x in range(28)],
             ),
         ]
-        new_df = bet_process(df, identifiers, "dt")
+        new_df = bet_process(df, identifiers, "dt", True)
         odds = new_df["teams/0_odds"].to_list()
         self.assertListEqual(odds, [
             4.0,

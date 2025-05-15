@@ -11,6 +11,7 @@ from timeseriesfeatures.feature import FEATURE_TYPE_LAG  # type: ignore
 from timeseriesfeatures.feature import (FEATURE_TYPE_ROLLING, VALUE_TYPE_DAYS,
                                         VALUE_TYPE_NONE, Feature)
 from timeseriesfeatures.process import process  # type: ignore
+from timeseriesfeatures.transform import Transform  # type: ignore
 from tqdm import tqdm
 
 from .columns import DELIMITER
@@ -70,6 +71,8 @@ def _extract_identifier_timeseries(
                 if pd.isnull(value):
                     continue
                 column = feature_column[len(identifier.column_prefix) :]
+                if not column:
+                    continue
                 if column not in identifier_df:
                     identifier_df[column] = None
                 identifier_df.loc[row.name, column] = value  # type: ignore
@@ -88,15 +91,37 @@ def _process_identifier_ts(
 ) -> dict[str, pd.DataFrame]:
     # pylint: disable=too-many-locals
     features = [
-        Feature(feature_type=FEATURE_TYPE_LAG, value1=1),
-        Feature(feature_type=FEATURE_TYPE_LAG, value1=2),
-        Feature(feature_type=FEATURE_TYPE_LAG, value1=4),
-        Feature(feature_type=FEATURE_TYPE_LAG, value1=8),
+        Feature(
+            feature_type=FEATURE_TYPE_LAG,
+            columns=[],
+            value1=1,
+            transform=str(Transform.NONE),
+        ),
+        Feature(
+            feature_type=FEATURE_TYPE_LAG,
+            columns=[],
+            value1=2,
+            transform=str(Transform.NONE),
+        ),
+        Feature(
+            feature_type=FEATURE_TYPE_LAG,
+            columns=[],
+            value1=4,
+            transform=str(Transform.NONE),
+        ),
+        Feature(
+            feature_type=FEATURE_TYPE_LAG,
+            columns=[],
+            value1=8,
+            transform=str(Transform.NONE),
+        ),
     ] + [
         Feature(
             feature_type=FEATURE_TYPE_ROLLING,
+            columns=[],
             value1=VALUE_TYPE_NONE if x is None else VALUE_TYPE_DAYS,
             value2=None if x is None else x.days,
+            transform=str(Transform.NONE),
         )
         for x in windows
     ]

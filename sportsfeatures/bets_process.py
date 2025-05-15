@@ -20,7 +20,10 @@ def _force_utc_aware(series, timezone="UTC"):
 
 
 def bet_process(
-    df: pd.DataFrame, identifiers: list[Identifier], dt_column: str
+    df: pd.DataFrame,
+    identifiers: list[Identifier],
+    dt_column: str,
+    use_bets_features: bool,
 ) -> pd.DataFrame:
     """Process bets."""
     # pylint: disable=too-many-locals,too-many-branches,too-many-statements
@@ -53,6 +56,7 @@ def bet_process(
             odds_data = []
             bookies_data = []
             dts_data = []
+            final_odds = None
             for bet in identifier.bets:
                 if bet.odds_column not in row or bet.bookie_id_column not in row:
                     continue
@@ -74,6 +78,10 @@ def bet_process(
                     dt = pd.Timestamp(dt).tz_convert("UTC")
                 if dt > game_dt - datetime.timedelta(hours=1):
                     continue
+                if bet.canonical_column in row:
+                    canonical = row[bet.canonical_column]
+                    if not pd.isnull(canonical) and canonical:
+                        final_odds = odds
                 odds_data.append(odds)
                 bookies_data.append(bookie_id)
                 dts_data.append(dt)
@@ -137,53 +145,66 @@ def bet_process(
 
             ffill_df = bet_df.set_index("dt").ffill()
             oneday_df = ffill_df[ffill_df.index > game_dt - datetime.timedelta(days=1)]
-            final_odds = resampled_df.mean(axis=1).to_list()[-1]
+            if final_odds is None:
+                final_odds = resampled_df.mean(axis=1).to_list()[-1]
 
-            row[DELIMITER.join([identifier.column_prefix, "odds", "max"])] = odds_max
-            row[DELIMITER.join([identifier.column_prefix, "odds", "min"])] = odds_min
-            row[DELIMITER.join([identifier.column_prefix, "odds", "mean"])] = bet_df[
-                "odds"
-            ].mean()
-            row[DELIMITER.join([identifier.column_prefix, "odds", "median"])] = bet_df[
-                "odds"
-            ].median()
-            row[DELIMITER.join([identifier.column_prefix, "odds", "spread"])] = (
-                odds_max - odds_min
-            )
-            row[DELIMITER.join([identifier.column_prefix, "odds", "bookies"])] = bet_df[
-                "bookie"
-            ].nunique()
-            row[DELIMITER.join([identifier.column_prefix, "odds", "roc"])] = (
-                latest_odds - earliest_odds
-            ) / (latest_dt - earliest_dt).total_seconds()
-            row[DELIMITER.join([identifier.column_prefix, "odds", "mom"])] = (
-                latest_odds - earliest_odds
-            )
-            row[DELIMITER.join([identifier.column_prefix, "odds", "directchanges"])] = (
-                direction_changes
-            )
-            row[DELIMITER.join([identifier.column_prefix, "odds", "samples"])] = len(
-                bet_df
-            )
-            # row[DELIMITER.join([identifier.column_prefix, "odds", "ewm"])] = (
-            #    resampled_df.mean(axis=1).ewm(alpha=0.2, adjust=False).mean()
-            # )
-            row[DELIMITER.join([identifier.column_prefix, "odds", "bigshifts"])] = (
-                big_shifts
-            )
-            row[
-                DELIMITER.join([identifier.column_prefix, "odds", "consensusflips"])
-            ] = consensus_flips
-            if len(oneday_df) > 1:
-                row[DELIMITER.join([identifier.column_prefix, "odds", "roc1day"])] = (
-                    oneday_df["odds"].iloc[-1] - oneday_df["odds"].iloc[0]
-                ) / datetime.timedelta(days=1).total_seconds()
-            else:
-                row[DELIMITER.join([identifier.column_prefix, "odds", "roc1day"])] = 0.0
+            if use_bets_features:
+                row[DELIMITER.join([identifier.column_prefix, "odds", "max"])] = (
+                    odds_max
+                )
+                row[DELIMITER.join([identifier.column_prefix, "odds", "min"])] = (
+                    odds_min
+                )
+                row[DELIMITER.join([identifier.column_prefix, "odds", "mean"])] = (
+                    bet_df["odds"].mean()
+                )
+                row[DELIMITER.join([identifier.column_prefix, "odds", "median"])] = (
+                    bet_df["odds"].median()
+                )
+                row[DELIMITER.join([identifier.column_prefix, "odds", "spread"])] = (
+                    odds_max - odds_min
+                )
+                row[DELIMITER.join([identifier.column_prefix, "odds", "bookies"])] = (
+                    bet_df["bookie"].nunique()
+                )
+                row[DELIMITER.join([identifier.column_prefix, "odds", "roc"])] = (
+                    latest_odds - earliest_odds
+                ) / (latest_dt - earliest_dt).total_seconds()
+                row[DELIMITER.join([identifier.column_prefix, "odds", "mom"])] = (
+                    latest_odds - earliest_odds
+                )
+                row[
+                    DELIMITER.join([identifier.column_prefix, "odds", "directchanges"])
+                ] = direction_changes
+                row[DELIMITER.join([identifier.column_prefix, "odds", "samples"])] = (
+                    len(bet_df)
+                )
+                # row[DELIMITER.join([identifier.column_prefix, "odds", "ewm"])] = (
+                #    resampled_df.mean(axis=1).ewm(alpha=0.2, adjust=False).mean()
+                # )
+                row[DELIMITER.join([identifier.column_prefix, "odds", "bigshifts"])] = (
+                    big_shifts
+                )
+                row[
+                    DELIMITER.join([identifier.column_prefix, "odds", "consensusflips"])
+                ] = consensus_flips
+                if len(oneday_df) > 1:
+                    row[
+                        DELIMITER.join([identifier.column_prefix, "odds", "roc1day"])
+                    ] = (
+                        oneday_df["odds"].iloc[-1] - oneday_df["odds"].iloc[0]
+                    ) / datetime.timedelta(days=1).total_seconds()
+                else:
+                    row[
+                        DELIMITER.join([identifier.column_prefix, "odds", "roc1day"])
+                    ] = 0.0
+                row[
+                    DELIMITER.join(
+                        [identifier.column_prefix, "odds", "priceefficiency"]
+                    )
+                ] = price_efficiency
             row[DELIMITER.join([identifier.column_prefix, "odds"])] = final_odds
-            row[
-                DELIMITER.join([identifier.column_prefix, "odds", "priceefficiency"])
-            ] = price_efficiency
+
             local_bookie_odds.append(1.0 / final_odds)
 
             points = row[identifier.points_column]
