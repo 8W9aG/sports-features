@@ -34,6 +34,7 @@ class TestProcess(unittest.TestCase):
                 team_0_bookie_column = team_0_column_prefix + "/odds/bookie"
                 team_0_dt_column = team_0_column_prefix + "/odds/dt"
                 team_0_canonical_column = team_0_column_prefix + "/odds/canonical"
+                team_0_bookie_name_column = team_0_column_prefix + "/odds/bookie_name"
                 team_1_id_column = team_1_column_prefix + "/id"
                 team_1_kicks = team_1_column_prefix + "/kicks"
                 team_1_points_column = team_1_column_prefix + "/points"
@@ -46,6 +47,7 @@ class TestProcess(unittest.TestCase):
                 team_1_bookie_column = team_1_column_prefix + "/odds/bookie"
                 team_1_dt_column = team_1_column_prefix + "/odds/dt"
                 team_1_canonical_column = team_1_column_prefix + "/odds/canonical"
+                team_1_bookie_name_column = team_1_column_prefix + "/odds/bookie_name"
                 df = pd.DataFrame(data={
                     dt_column: [datetime.datetime(2022, 1, 1), datetime.datetime(2022, 1, 2), datetime.datetime(2022, 1, 3)],
                     team_0_id_column: ["0", "1", "0"],
@@ -60,6 +62,7 @@ class TestProcess(unittest.TestCase):
                     team_0_bookie_column: ["a", "a", "a"],
                     team_0_dt_column: [datetime.datetime(2022, 1, 1) - datetime.timedelta(hours=1), datetime.datetime(2022, 1, 2) - datetime.timedelta(hours=1), datetime.datetime(2022, 1, 3) - datetime.timedelta(hours=1)],
                     team_0_canonical_column: [False, False, False],
+                    team_0_bookie_name_column: ["a", "a", "a"],
                     team_1_id_column: ["1", "0", "1"],
                     team_1_kicks: [20, 40, 60],
                     team_1_points_column: [60, 120, 180],
@@ -72,6 +75,7 @@ class TestProcess(unittest.TestCase):
                     team_1_bookie_column: ["a", "a", "a"],
                     team_1_dt_column: [datetime.datetime(2022, 1, 1) - datetime.timedelta(hours=1), datetime.datetime(2022, 1, 2) - datetime.timedelta(hours=1), datetime.datetime(2022, 1, 3) - datetime.timedelta(hours=1)],
                     team_1_canonical_column: [False, False, False],
+                    team_1_bookie_name_column: ["a", "a", "a"],
                 })
                 identifiers = [
                     Identifier(
@@ -90,6 +94,7 @@ class TestProcess(unittest.TestCase):
                             bookie_id_column=team_0_bookie_column,
                             dt_column=team_0_dt_column,
                             canonical_column=team_0_canonical_column,
+                            bookie_name_column=team_0_bookie_name_column,
                         )],
                     ),
                     Identifier(
@@ -108,6 +113,7 @@ class TestProcess(unittest.TestCase):
                             bookie_id_column=team_1_bookie_column,
                             dt_column=team_1_dt_column,
                             canonical_column=team_1_canonical_column,
+                            bookie_name_column=team_1_bookie_name_column,
                         )],
                     ),
                 ]
