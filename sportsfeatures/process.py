@@ -17,6 +17,7 @@ from .ordinal_process import ordinal_process
 from .remove_process import remove_process
 from .skill_process import skill_process
 from .timeseries_process import timeseries_process
+from .win_process import win_process
 
 
 def process(
@@ -33,6 +34,7 @@ def process(
     df = margin_process(df, identifiers)
     df = bet_process(df, identifiers, dt_column, use_bets_features)
     df = datetimesub_process(df, dt_column, identifiers)
+    df = win_process(df, identifiers)
     df = timeseries_process(df, identifiers, windows, dt_column)
     df = datetime_process(df, dt_column)
     df = distance_process(df, identifiers)

@@ -1,6 +1,6 @@
 """Calculate margin features."""
 
-# pylint: disable=too-many-locals,too-many-branches
+# pylint: disable=too-many-locals,too-many-branches,duplicate-code
 
 import sys
 from warnings import simplefilter
