@@ -1,7 +1,9 @@
 """A description of player representation in the dataframe."""
 
+# pylint: disable=too-many-locals
 from .bet import Bet
 from .entity_type import EntityType
+from .news import News
 
 
 class Identifier:
@@ -25,6 +27,7 @@ class Identifier:
         bets: list[Bet] | None = None,
         latitude_column: str | None = None,
         longitude_column: str | None = None,
+        news: list[News] | None = None,
     ):
         self.entity_type = entity_type
         self.column = column
@@ -40,6 +43,7 @@ class Identifier:
         self.bets = bets if bets is not None else []
         self.latitude_column = latitude_column
         self.longitude_column = longitude_column
+        self.news = news if news is not None else []
 
     @property
     def columns(self) -> list[str]:

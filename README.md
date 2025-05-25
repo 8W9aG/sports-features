@@ -20,6 +20,7 @@ Python 3.11.6:
 - [pytest-is-running](https://github.com/adamchainz/pytest-is-running)
 - [joblib](https://joblib.readthedocs.io/en/stable/)
 - [timeseries-features](https://github.com/8W9aG/timeseries-features)
+- [textfeats](https://github.com/8W9aG/text-features)
 
 ## Raison D'être :thought_balloon:
 

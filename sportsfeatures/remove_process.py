@@ -18,4 +18,9 @@ def remove_process(df: pd.DataFrame, identifiers: list[Identifier]) -> pd.DataFr
                 drop_columns.add(bet.dt_column)
             drop_columns.add(bet.bookie_name_column)
             drop_columns.add(bet.canonical_column)
+        for news in identifier.news:
+            drop_columns.add(news.title_column)
+            drop_columns.add(news.published_column)
+            drop_columns.add(news.summary_column)
+            drop_columns.add(news.source_column)
     return df.drop(columns=list(drop_columns), errors="ignore").copy()
