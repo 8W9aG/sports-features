@@ -14,6 +14,7 @@ from .identifier import Identifier
 COUNT_COLUMN = "count"
 MENTIONS_COLUMN = "mentions"
 EMBEDDING_COLUMN = "embedding"
+NEWS_COLUMN = "news"
 
 
 def news_process(df: pd.DataFrame, identifiers: list[Identifier]) -> pd.DataFrame:
@@ -38,7 +39,9 @@ def news_process(df: pd.DataFrame, identifiers: list[Identifier]) -> pd.DataFram
                 summary_columns.append(news.summary_column)
 
             # Calculate counts
-            count_col = DELIMITER.join([identifier.column_prefix, "news", COUNT_COLUMN])
+            count_col = DELIMITER.join(
+                [identifier.column_prefix, NEWS_COLUMN, COUNT_COLUMN]
+            )
             if count_col not in df_dict:
                 df_dict[count_col] = [None for _ in range(len(df))]
             df_dict[count_col][row[0]] = float(len(summary_columns))
@@ -51,7 +54,7 @@ def news_process(df: pd.DataFrame, identifiers: list[Identifier]) -> pd.DataFram
                 if "injur" in summary:
                     injury_mentions += 1
             injury_mentions_column = DELIMITER.join(
-                [identifier.column_prefix, "news", MENTIONS_COLUMN, "injury"]
+                [identifier.column_prefix, NEWS_COLUMN, MENTIONS_COLUMN, "injury"]
             )
             if injury_mentions_column not in df_dict:
                 df_dict[injury_mentions_column] = [None for _ in range(len(df))]
@@ -78,7 +81,7 @@ def news_process(df: pd.DataFrame, identifiers: list[Identifier]) -> pd.DataFram
                 embedding_column = DELIMITER.join(
                     [
                         identifier.column_prefix,
-                        "news",
+                        NEWS_COLUMN,
                         EMBEDDING_COLUMN,
                         embedding_index,
                     ]
