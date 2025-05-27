@@ -32,6 +32,7 @@ class TestBetProcess(unittest.TestCase):
                     dt_column=f"teams/0/odds/{x}/dt",
                     canonical_column=f"teams/0/odds/{x}/canonical",
                     bookie_name_column=f"teams/0/odds/{x}/bookie/realname",
+                    bet_type_column=f"teams/0/odds/{x}/bet_type",
                 ) for x in range(28)],
             ),
             Identifier(
@@ -46,6 +47,7 @@ class TestBetProcess(unittest.TestCase):
                     dt_column=f"teams/1/odds/{x}/dt",
                     canonical_column=f"teams/1/odds/{x}/canonical",
                     bookie_name_column=f"teams/1/odds/{x}/bookie/realname",
+                    bet_type_column=f"teams/0/odds/{x}/bet_type",
                 ) for x in range(28)],
             ),
         ]

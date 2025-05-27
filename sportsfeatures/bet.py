@@ -13,6 +13,7 @@ class Bet:
         bookie_id_column: str,
         canonical_column: str,
         bookie_name_column: str,
+        bet_type_column: str,
         dt_column: str | None = None,
     ):
         self.odds_column = odds_column
@@ -20,3 +21,4 @@ class Bet:
         self.dt_column = dt_column
         self.canonical_column = canonical_column
         self.bookie_name_column = bookie_name_column
+        self.bet_type_column = bet_type_column
