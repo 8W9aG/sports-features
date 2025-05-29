@@ -19,45 +19,44 @@ def lastplayed_process(
     tqdm.pandas(desc="Last Played Features")
     last_identifier_dts: dict[str, datetime.datetime | None] = {}
     first_identifier_dts: dict[str, datetime.datetime] = {}
+    df_cols = df.columns.values.tolist()
+    df_dict: dict[str, list[float | None]] = {}
 
-    def record_time(
-        row: pd.Series,
-        identifiers: list[Identifier],
-        dt_column: str,
-    ) -> pd.Series:
-        nonlocal last_identifier_dts
-        nonlocal first_identifier_dts
+    written_columns = set()
+    for row in tqdm(
+        df.itertuples(name=None), desc="Last Played Processing", total=len(df)
+    ):
+        row_dict = {x: row[count + 1] for count, x in enumerate(df_cols)}
 
-        dt = row[dt_column]
+        dt = row_dict[dt_column]
         for identifier in identifiers:
-            if identifier.column not in row:
+            if identifier.column not in row_dict:
                 continue
-            identifier_id = row[identifier.column]
-            if pd.isnull(identifier_id):
+            identifier_id = row_dict[identifier.column]
+            if identifier_id is None:
                 continue
             if not isinstance(identifier_id, str):
                 continue
             key = "_".join([str(identifier.entity_type), identifier_id])
             last_dt = last_identifier_dts.get(key)
             if last_dt is not None and dt is not None:
-                row[DELIMITER.join([identifier.column_prefix, "lastplayeddays"])] = (
-                    dt - last_dt
-                ).days
+                col = DELIMITER.join([identifier.column_prefix, "lastplayeddays"])
+                if col not in df_dict:
+                    df_dict[col] = [None for _ in range(len(df))]
+                written_columns.add(col)
+                df_dict[col][row[0]] = (dt - last_dt).days
             last_identifier_dts[key] = dt
             first_dt = first_identifier_dts.get(key)
             if first_dt is not None and dt is not None:
-                row[DELIMITER.join([identifier.column_prefix, "firstplayeddays"])] = (
-                    dt - first_dt
-                ).days
+                col = DELIMITER.join([identifier.column_prefix, "firstplayeddays"])
+                if col not in df_dict:
+                    df_dict[col] = [None for _ in range(len(df))]
+                written_columns.add(col)
+                df_dict[col][row[0]] = (dt - first_dt).days
             elif first_dt is None and dt is not None:
                 first_identifier_dts[key] = dt
-        return row
 
-    return df.progress_apply(
-        functools.partial(
-            record_time,
-            identifiers=identifiers,
-            dt_column=dt_column,
-        ),
-        axis=1,
-    ).copy()  # type: ignore
+    for column in written_columns:
+        df[column] = df_dict[column]
+
+    return df[sorted(df.columns.values.tolist())].copy()
