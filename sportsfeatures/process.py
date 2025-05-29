@@ -28,6 +28,7 @@ def process(
     windows: list[datetime.timedelta | None],
     categorical_features: set[str],
     use_bets_features: bool = True,
+    use_news_features: bool = True,
 ) -> pd.DataFrame:
     """Process the dataframe for sports features."""
     df = skill_process(df, dt_column, identifiers, windows)
@@ -40,7 +41,8 @@ def process(
     df = datetime_process(df, dt_column)
     df = distance_process(df, identifiers)
     df = lastplayed_process(df, identifiers, dt_column)
-    df = news_process(df, identifiers)
+    if use_news_features:
+        df = news_process(df, identifiers)
     df = ordinal_process(df, categorical_features)
     df = remove_process(df, identifiers)
     return df
