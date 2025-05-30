@@ -66,7 +66,7 @@ def news_process(df: pd.DataFrame, identifiers: list[Identifier]) -> pd.DataFram
             # Calculate embeddings
             news_df = process(
                 pd.DataFrame(
-                    data={k: v for k, v in row_dict.items() if k in summary_columns}
+                    data={k: [v] for k, v in row_dict.items() if k in summary_columns}
                 )
             )
             news_df = news_df.drop(columns=summary_columns, errors="ignore")
