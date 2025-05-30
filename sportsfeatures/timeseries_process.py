@@ -32,6 +32,7 @@ def _pool_process(
     if "" in drop_columns:
         drop_columns.remove("")
     drop_columns.remove(_COLUMN_PREFIX_COLUMN)
+    print(df)
     return (
         identifier_id,
         process(df, features=features, on=dt_column).drop(columns=drop_columns).copy(),
