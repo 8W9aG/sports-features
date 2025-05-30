@@ -37,6 +37,8 @@ def news_process(df: pd.DataFrame, identifiers: list[Identifier]) -> pd.DataFram
                 if row_dict[news.summary_column] is None:
                     continue
                 summary_columns.append(news.summary_column)
+            if not summary_columns:
+                continue
 
             # Calculate counts
             count_col = DELIMITER.join(

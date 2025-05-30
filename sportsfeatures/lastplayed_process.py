@@ -1,9 +1,8 @@
 """Process the time delta between the last time played."""
 
-# pylint: disable=duplicate-code,too-many-branches
+# pylint: disable=duplicate-code,too-many-branches,too-many-locals)
 
 import datetime
-import functools
 
 import pandas as pd
 from tqdm import tqdm
