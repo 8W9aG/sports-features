@@ -1,3 +1,3 @@
 """The sportsfeatures main module."""
 
-__VERSION__ = "0.0.73"
+__VERSION__ = "0.0.74"
