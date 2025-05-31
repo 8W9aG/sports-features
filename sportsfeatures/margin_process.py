@@ -79,6 +79,6 @@ def margin_process(df: pd.DataFrame, identifiers: list[Identifier]) -> pd.DataFr
             identifiers_ts[key] = identifier_dict
 
     for column in written_columns:
-        df[column] = df_dict[column]
+        df.loc[:, column] = df_dict[column]
 
     return df[sorted(df.columns.values.tolist())].copy()

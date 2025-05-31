@@ -1,6 +1,6 @@
 """Process the time delta between the last time played."""
 
-# pylint: disable=duplicate-code,too-many-branches,too-many-locals)
+# pylint: disable=duplicate-code,too-many-branches,too-many-locals
 
 import datetime
 
@@ -56,6 +56,6 @@ def lastplayed_process(
                 first_identifier_dts[key] = dt
 
     for column in written_columns:
-        df[column] = df_dict[column]
+        df.loc[:, column] = df_dict[column]
 
     return df[sorted(df.columns.values.tolist())].copy()

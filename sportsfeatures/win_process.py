@@ -72,7 +72,7 @@ def win_process(df: pd.DataFrame, identifiers: list[Identifier]) -> pd.DataFrame
                 wins_dict[key] = float(points == max_points)
 
     for column in written_columns:
-        df[column] = df_dict[column]
+        df.loc[:, column] = df_dict[column]
 
     # Add new feature columns
     for identifier in identifiers:

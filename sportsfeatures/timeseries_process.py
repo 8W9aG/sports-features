@@ -165,7 +165,7 @@ def _write_ts_features(
                 df_dict[key][row[0]] = value
                 written_columns.add(key)
     for column in written_columns:
-        df[column] = df_dict[column]
+        df.loc[:, column] = df_dict[column]
 
     return df
 
