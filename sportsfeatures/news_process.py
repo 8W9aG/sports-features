@@ -11,7 +11,11 @@ def news_process(df: pd.DataFrame, identifiers: list[Identifier]) -> pd.DataFram
     """Process news features."""
 
     for identifier in identifiers:
-        summary_cols = [x.summary_column for x in identifier.news]
+        summary_cols = [
+            x.summary_column
+            for x in identifier.news
+            if x.summary_column in df.columns.values.tolist()
+        ]
         if not summary_cols:
             continue
         news_df = process(df[summary_cols], True, {"injury"}).copy()
