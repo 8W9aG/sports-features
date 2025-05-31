@@ -8,4 +8,4 @@ numpy>=1.26.4
 pytest-is-running>=1.5.1
 joblib>=1.4.2
 timeseriesfeatures>=0.0.16
-textfeats>=0.1.1
+textfeats>=0.1.2
