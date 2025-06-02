@@ -29,16 +29,17 @@ def process(
     categorical_features: set[str],
     use_bets_features: bool = True,
     use_news_features: bool = True,
+    datetime_columns: set[str] | None = None,
 ) -> pd.DataFrame:
     """Process the dataframe for sports features."""
     df = skill_process(df, dt_column, identifiers, windows)
     df = offensive_efficiency_process(df, identifiers)
     df = margin_process(df, identifiers)
     df = bet_process(df, identifiers, dt_column, use_bets_features)
-    df = datetimesub_process(df, dt_column, identifiers)
+    df = datetimesub_process(df, dt_column, identifiers, datetime_columns)
     df = win_process(df, identifiers)
     df = timeseries_process(df, identifiers, windows, dt_column)
-    df = datetime_process(df, dt_column)
+    df = datetime_process(df, dt_column, datetime_columns)
     df = distance_process(df, identifiers)
     df = lastplayed_process(df, identifiers, dt_column)
     if use_news_features:
