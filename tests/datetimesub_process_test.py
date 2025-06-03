@@ -19,4 +19,4 @@ class TestDatetimesubProcess(unittest.TestCase):
             dt_column: [datetime.datetime(2022, 1, 1), datetime.datetime(2022, 1, 2), datetime.datetime(2022, 1, 3)],
             dt_other_column: [datetime.datetime(2022, 1, 1, tzinfo=datetime.timezone.utc), datetime.datetime(2022, 1, 2, tzinfo=datetime.timezone.utc), datetime.datetime(2022, 1, 3, tzinfo=datetime.timezone.utc)],
         })
-        datetimesub_process(df, dt_column, [identifier])
+        datetimesub_process(df, dt_column, [identifier], None)
