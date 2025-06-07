@@ -1,5 +1,6 @@
 """Process a dataframe for its datetime information."""
 
+import logging
 from warnings import simplefilter
 
 import pandas as pd
@@ -16,11 +17,16 @@ def datetime_process(
         cols.extend(datetime_columns)
     for col in cols:
         df[col] = pd.to_datetime(df[col])
-    dtf = DatetimeFeatures(
-        variables=cols,  # type: ignore
-        features_to_extract="all",
-        missing_values="ignore",
-        drop_original=False,
-        utc=True,
-    )
-    return dtf.fit_transform(df).copy()
+    for col in cols:
+        try:
+            dtf = DatetimeFeatures(
+                variables=[col],  # type: ignore
+                features_to_extract="all",
+                missing_values="ignore",
+                drop_original=False,
+                utc=True,
+            )
+            df = dtf.fit_transform(df)
+        except ValueError as exc:
+            logging.warning(str(exc))
+    return df
