@@ -14,6 +14,8 @@ def datetime_process(
     cols = [dt_column]
     if datetime_columns is not None:
         cols.extend(datetime_columns)
+    for col in cols:
+        df[col] = pd.to_datetime(df[col])
     dtf = DatetimeFeatures(
         variables=cols,  # type: ignore
         features_to_extract="all",
