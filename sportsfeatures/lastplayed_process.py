@@ -67,6 +67,8 @@ def lastplayed_process(
 
             birth_dt = birth_identifier_dts.get(key)
             if birth_dt is not None and dt is not None:
+                if birth_dt.tzinfo is None and dt.tzinfo is not None:
+                    birth_dt = birth_dt.tz_convert(dt.tzinfo)  # type: ignore
                 col = DELIMITER.join([identifier.column_prefix, "birthdays"])
                 if col not in df_dict:
                     df_dict[col] = [None for _ in range(len(df))]
