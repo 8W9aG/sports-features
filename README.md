@@ -21,6 +21,7 @@ Python 3.11.6:
 - [joblib](https://joblib.readthedocs.io/en/stable/)
 - [timeseries-features](https://github.com/8W9aG/timeseries-features)
 - [textfeats](https://github.com/8W9aG/text-features)
+- [scipy](https://scipy.org/)
 
 ## Raison D'être :thought_balloon:
 

@@ -15,6 +15,7 @@ from .margin_process import margin_process
 from .news_process import news_process
 from .offensive_efficiency_process import offensive_efficiency_process
 from .ordinal_process import ordinal_process
+from .players_process import players_process
 from .remove_process import remove_process
 from .skill_process import skill_process
 from .timeseries_process import timeseries_process
@@ -46,4 +47,5 @@ def process(
         df = news_process(df, identifiers)
     df = ordinal_process(df, categorical_features)
     df = remove_process(df, identifiers)
+    df = players_process(df, identifiers)
     return df
