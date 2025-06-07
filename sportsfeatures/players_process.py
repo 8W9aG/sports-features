@@ -1,6 +1,7 @@
 """Calculate players features."""
 
 # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+import math
 import statistics
 from warnings import simplefilter
 
@@ -46,11 +47,13 @@ def players_process(df: pd.DataFrame, identifiers: list[Identifier]) -> pd.DataF
                         continue
                     if not isinstance(value, float):
                         continue
+                    if math.isnan(value) or math.isinf(value):
+                        continue
                     column = key[len(identifier.column_prefix) :]
                     columns[column] = columns.get(column, []) + [value]
 
             for column, values in columns.items():
-                if not values:
+                if not values or len(values) < 2:
                     continue
                 mean_column = DELIMITER.join(
                     [column_prefix, PLAYERS_COLUMN, column, "mean"]
