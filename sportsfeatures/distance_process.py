@@ -1,6 +1,7 @@
 """Process the distance between two locations."""
 
 # pylint: disable=duplicate-code,too-many-branches,too-many-locals,too-many-statements
+import statistics
 
 import geopy.distance  # type: ignore
 import pandas as pd
@@ -83,6 +84,54 @@ def distance_process(df: pd.DataFrame, identifiers: list[Identifier]) -> pd.Data
                 ).km
                 written_columns.add(distance_column)
             last_identifier_locations[key] = current_location
+
+        players_latitudes: dict[str, list[float]] = {}
+        players_longitudes: dict[str, list[float]] = {}
+        for identifier in player_identifiers:
+            if identifier.team_identifier_column is None:
+                continue
+            if identifier.latitude_column is None:
+                continue
+            if identifier.longitude_column is None:
+                continue
+            latitude = row_dict.get(identifier.latitude_column)
+            if latitude is None:
+                continue
+            longitude = row_dict.get(identifier.longitude_column)
+            if longitude is None:
+                continue
+            players_latitudes[identifier.team_identifier_column] = (
+                players_latitudes.get(identifier.team_identifier_column, [])
+                + [latitude]
+            )
+            players_longitudes[identifier.team_identifier_column] = (
+                players_longitudes.get(identifier.team_identifier_column, [])
+                + [longitude]
+            )
+        for k, v in players_latitudes.items():
+            for team_identifier in team_identifiers:
+                if not k.startswith(team_identifier.column_prefix):
+                    continue
+                latitude_col = DELIMITER.join(
+                    [team_identifier.column_prefix, "centerofgravity", "latitude"]
+                )
+                if latitude_col not in df_dict:
+                    df_dict[latitude_col] = [None for _ in range(len(df))]
+                df_dict[latitude_col][row[0]] = statistics.mean(v)
+                written_columns.add(latitude_col)
+                break
+        for k, v in players_longitudes.items():
+            for team_identifier in team_identifiers:
+                if not k.startswith(team_identifier.column_prefix):
+                    continue
+                longitude_col = DELIMITER.join(
+                    [team_identifier.column_prefix, "centerofgravity", "longitude"]
+                )
+                if longitude_col not in df_dict:
+                    df_dict[longitude_col] = [None for _ in range(len(df))]
+                df_dict[longitude_col][row[0]] = statistics.mean(v)
+                written_columns.add(longitude_col)
+                break
 
     for column in written_columns:
         df.loc[:, column] = df_dict[column]
