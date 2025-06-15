@@ -1,73 +1,81 @@
 """A process function for determing offensive efficiency of entities."""
 
-import functools
-
+# pylint: disable=too-many-locals,too-many-branches,too-many-statements
 import pandas as pd
 from tqdm import tqdm
 
-from .cache import MEMORY
 from .columns import DELIMITER
 from .identifier import Identifier
 
 OFFENSIVE_EFFICIENCY_COLUMN = "offensiveefficiency"
 
 
-@MEMORY.cache
-def _record_offensive_efficiency(
-    row: pd.Series, identifiers: list[Identifier]
-) -> pd.Series:
-    for identifier in identifiers:
-        if identifier.field_goals_column is None:
-            continue
-        field_goals_value = row[identifier.field_goals_column]
-        if pd.isnull(field_goals_value):
-            continue
-        field_goals = float(field_goals_value)
-        if identifier.assists_column is None:
-            continue
-        assists_value = row[identifier.assists_column]
-        if pd.isnull(assists_value):
-            continue
-        assists = float(assists_value)
-        if identifier.field_goals_attempted_column is None:
-            continue
-        field_goals_attempted_value = row[identifier.field_goals_attempted_column]
-        if pd.isnull(field_goals_attempted_value):
-            continue
-        field_goals_attempted = float(row[identifier.field_goals_attempted_column])
-        if identifier.offensive_rebounds_column is None:
-            continue
-        offensive_rebounds_value = row[identifier.offensive_rebounds_column]
-        if pd.isnull(offensive_rebounds_value):
-            continue
-        offensive_rebounds = float(offensive_rebounds_value)
-        if identifier.turnovers_column is None:
-            continue
-        turnovers_value = row[identifier.turnovers_column]
-        if pd.isnull(turnovers_value):
-            continue
-        turnovers = float(turnovers_value)
-        offensive_efficiency_column = DELIMITER.join(
-            [identifier.column_prefix, OFFENSIVE_EFFICIENCY_COLUMN]
-        )
-        row[offensive_efficiency_column] = (field_goals + assists) / (
-            field_goals_attempted - offensive_rebounds + assists + turnovers
-        )
-        if offensive_efficiency_column not in identifier.feature_columns:
-            identifier.feature_columns.append(offensive_efficiency_column)
-    return row
-
-
 def offensive_efficiency_process(
     df: pd.DataFrame, identifiers: list[Identifier]
 ) -> pd.DataFrame:
     """Process a dataframe for offensive efficiency."""
-    tqdm.pandas(desc="Offensive Efficiency Features")
+    df_dict: dict[str, list[float | None]] = {}
+    df_cols = df.columns.values.tolist()
 
-    return df.progress_apply(
-        functools.partial(
-            _record_offensive_efficiency,
-            identifiers=identifiers,
-        ),
-        axis=1,
-    ).copy()  # type: ignore
+    written_columns = set()
+    for row in tqdm(
+        df.itertuples(name=None), desc="Offensive Efficiency Processing", total=len(df)
+    ):
+        row_dict = {x: row[count + 1] for count, x in enumerate(df_cols)}
+        for identifier in identifiers:
+            if identifier.field_goals_column is None:
+                continue
+            if identifier.field_goals_column not in row_dict:
+                continue
+            field_goals_value = row_dict[identifier.field_goals_column]
+            if pd.isnull(field_goals_value):
+                continue
+            field_goals = float(field_goals_value)
+            if identifier.assists_column is None:
+                continue
+            if identifier.assists_column not in row_dict:
+                continue
+            assists_value = row_dict[identifier.assists_column]
+            if pd.isnull(assists_value):
+                continue
+            assists = float(assists_value)
+            if identifier.field_goals_attempted_column is None:
+                continue
+            if identifier.field_goals_attempted_column not in row_dict:
+                continue
+            field_goals_attempted_value = row_dict[
+                identifier.field_goals_attempted_column
+            ]
+            if pd.isnull(field_goals_attempted_value):
+                continue
+            field_goals_attempted = float(field_goals_attempted_value)
+            if identifier.offensive_rebounds_column is None:
+                continue
+            if identifier.offensive_rebounds_column not in row_dict:
+                continue
+            offensive_rebounds_value = row_dict[identifier.offensive_rebounds_column]
+            if pd.isnull(offensive_rebounds_value):
+                continue
+            offensive_rebounds = float(offensive_rebounds_value)
+            if identifier.turnovers_column is None:
+                continue
+            if identifier.turnovers_column not in row_dict:
+                continue
+            turnovers_value = row_dict[identifier.turnovers_column]
+            if pd.isnull(turnovers_value):
+                continue
+            turnovers = float(turnovers_value)
+            offensive_efficiency_column = DELIMITER.join(
+                [identifier.column_prefix, OFFENSIVE_EFFICIENCY_COLUMN]
+            )
+            if offensive_efficiency_column not in df_dict:
+                df_dict[offensive_efficiency_column] = [None for _ in range(len(df))]
+            df_dict[offensive_efficiency_column][row[0]] = (field_goals + assists) / (
+                field_goals_attempted - offensive_rebounds + assists + turnovers
+            )
+            written_columns.add(offensive_efficiency_column)
+
+    for column in written_columns:
+        df.loc[:, column] = df_dict[column]
+
+    return df[sorted(df.columns.values.tolist())].copy()

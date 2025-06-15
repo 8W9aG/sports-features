@@ -29,7 +29,7 @@ def players_process(df: pd.DataFrame, identifiers: list[Identifier]) -> pd.DataF
         ) + [identifier]
 
     for column_prefix, player_identifiers in team_identifiers.items():
-        columns = {}
+        columns: dict[str, list[float]] = {}
         for identifier in player_identifiers:
             for col in df_cols:
                 if not col.startswith(identifier.column_prefix):
