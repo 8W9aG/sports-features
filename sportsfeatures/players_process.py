@@ -4,6 +4,7 @@
 from warnings import simplefilter
 
 import pandas as pd
+import tqdm
 from pandas.api.types import is_float_dtype
 
 from .columns import DELIMITER
@@ -28,7 +29,9 @@ def players_process(df: pd.DataFrame, identifiers: list[Identifier]) -> pd.DataF
             team_identifier[0].column_prefix, []
         ) + [identifier]
 
-    for column_prefix, player_identifiers in team_identifiers.items():
+    for column_prefix, player_identifiers in tqdm.tqdm(
+        team_identifiers.items(), desc="Players Processing"
+    ):
         columns: dict[str, list[float]] = {}
         for identifier in player_identifiers:
             for col in df_cols:

@@ -16,6 +16,7 @@ from .news_process import news_process
 from .offensive_efficiency_process import offensive_efficiency_process
 from .ordinal_process import ordinal_process
 from .players_process import players_process
+from .reduce_process import reduce_process
 from .remove_process import remove_process
 from .skill_process import skill_process
 from .timeseries_process import timeseries_process
@@ -59,4 +60,5 @@ def process(
     df = remove_process(df, identifiers)
     if use_players_feature:
         df = players_process(df, identifiers)
-    return _reduce_memory_usage(df.dropna(axis=1, how="all"))
+    df = reduce_process(_reduce_memory_usage(df.dropna(axis=1, how="all")))
+    return df
