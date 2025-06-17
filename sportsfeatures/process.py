@@ -4,6 +4,7 @@
 import datetime
 
 import pandas as pd
+import tqdm
 
 from .bets_process import bet_process
 from .datetime_process import datetime_process
@@ -24,7 +25,7 @@ from .win_process import win_process
 
 
 def _reduce_memory_usage(df: pd.DataFrame) -> pd.DataFrame:
-    for col in df.columns:
+    for col in tqdm.tqdm(df.columns, desc="Downcasting Columns"):
         if df[col].dtype == "int64":
             df[col] = pd.to_numeric(df[col], downcast="integer")
         elif df[col].dtype == "float64":

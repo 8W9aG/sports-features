@@ -92,7 +92,7 @@ def reduce_process(df: pd.DataFrame) -> pd.DataFrame:
     drop_features = _get_correlated_features_to_drop_chunked(
         df,
         threshold=0.99,
-        chunk_size=4096,
+        chunk_size=1024,
     )
     df = df.drop(columns=drop_features, errors="ignore")
     return df
