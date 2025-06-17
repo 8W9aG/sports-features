@@ -3,6 +3,7 @@
 # pylint: disable=too-many-locals,consider-using-enumerate
 import numpy as np
 import pandas as pd
+import tqdm
 from feature_engine.selection import (DropConstantFeatures,
                                       DropDuplicateFeatures)
 
@@ -25,7 +26,7 @@ def find_non_categorical_numeric_columns(df: pd.DataFrame) -> list[str]:
 def _get_correlated_features_to_drop_chunked(
     df: pd.DataFrame,
     threshold: float = 0.85,
-    chunk_size: int = 4096,
+    chunk_size: int = 2048,
     random_seed: int = 42,
 ) -> list[str]:
     """
@@ -41,7 +42,9 @@ def _get_correlated_features_to_drop_chunked(
     # First pass: intra-chunk correlation pruning
     survivors = []
     to_drop_total = set()
-    for i in range(0, len(sorted_cols), chunk_size):
+    for i in tqdm.tqdm(
+        range(0, len(sorted_cols), chunk_size), desc="Correlated Features Chunks"
+    ):
         chunk_cols = sorted_cols[i : i + chunk_size]
         chunk_corr = np.corrcoef(df_numeric[chunk_cols].values, rowvar=False)
         abs_corr = np.abs(chunk_corr)
