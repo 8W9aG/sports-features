@@ -5,6 +5,8 @@ import numpy as np
 import pandas as pd
 import tqdm
 
+from .embedding_column import is_embedding_column
+
 
 def find_non_categorical_numeric_columns(df: pd.DataFrame) -> list[str]:
     """
@@ -88,6 +90,6 @@ def reduce_process(df: pd.DataFrame, original_columns: set[str]) -> pd.DataFrame
         threshold=0.99,
         chunk_size=1024,
     )
-    drop_columns = set(drop_features)
+    drop_columns = {x for x in drop_features if not is_embedding_column(x)}
     df = df.drop(columns=drop_columns - original_columns, errors="ignore")
     return df
