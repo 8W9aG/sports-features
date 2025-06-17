@@ -25,7 +25,7 @@ def find_non_categorical_numeric_columns(df: pd.DataFrame) -> list[str]:
 def _get_correlated_features_to_drop_chunked(
     df: pd.DataFrame,
     threshold: float = 0.85,
-    chunk_size: int = 10000,
+    chunk_size: int = 4096,
     random_seed: int = 42,
 ) -> list[str]:
     """
@@ -43,8 +43,7 @@ def _get_correlated_features_to_drop_chunked(
     to_drop_total = set()
     for i in range(0, len(sorted_cols), chunk_size):
         chunk_cols = sorted_cols[i : i + chunk_size]
-        chunk_df = df_numeric[chunk_cols]
-        chunk_corr = np.corrcoef(chunk_df.values, rowvar=False)
+        chunk_corr = np.corrcoef(df_numeric[chunk_cols].values, rowvar=False)
         abs_corr = np.abs(chunk_corr)
 
         to_drop = set()
@@ -64,8 +63,7 @@ def _get_correlated_features_to_drop_chunked(
     if len(survivors) < 2:
         return sorted(to_drop_total)
 
-    survivors_df = df_numeric[survivors]
-    final_corr = np.corrcoef(survivors_df.values, rowvar=False)
+    final_corr = np.corrcoef(df_numeric[survivors].values, rowvar=False)
     abs_corr = np.abs(final_corr)
 
     final_drop = set()
@@ -91,7 +89,7 @@ def reduce_process(df: pd.DataFrame) -> pd.DataFrame:
     drop_features = _get_correlated_features_to_drop_chunked(
         df,
         threshold=0.99,
-        chunk_size=10000,
+        chunk_size=4096,
     )
     df = df.drop(columns=drop_features, errors="ignore")
     return df

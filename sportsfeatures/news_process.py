@@ -9,6 +9,7 @@ from .identifier import Identifier
 
 def news_process(df: pd.DataFrame, identifiers: list[Identifier]) -> pd.DataFrame:
     """Process news features."""
+    pd.options.mode.chained_assignment = None
 
     for identifier in identifiers:
         summary_cols = [
