@@ -4,8 +4,6 @@
 import numpy as np
 import pandas as pd
 import tqdm
-from feature_engine.selection import (DropConstantFeatures,
-                                      DropDuplicateFeatures)
 
 
 def find_non_categorical_numeric_columns(df: pd.DataFrame) -> list[str]:
@@ -83,16 +81,13 @@ def _get_correlated_features_to_drop_chunked(
     return sorted(to_drop_total)
 
 
-def reduce_process(df: pd.DataFrame) -> pd.DataFrame:
+def reduce_process(df: pd.DataFrame, original_columns: set[str]) -> pd.DataFrame:
     """Reduce the features in the dataframe."""
-    dcf = DropConstantFeatures(missing_values="ignore")
-    df = dcf.fit_transform(df)
-    ddf = DropDuplicateFeatures(missing_values="ignore")
-    df = ddf.fit_transform(df)
     drop_features = _get_correlated_features_to_drop_chunked(
         df,
         threshold=0.99,
         chunk_size=1024,
     )
-    df = df.drop(columns=drop_features, errors="ignore")
+    drop_columns = set(drop_features)
+    df = df.drop(columns=drop_columns - original_columns, errors="ignore")
     return df

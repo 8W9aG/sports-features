@@ -45,6 +45,7 @@ def process(
     use_players_feature: bool = False,
 ) -> pd.DataFrame:
     """Process the dataframe for sports features."""
+    original_columns = set(df.columns.values.tolist())
     df = skill_process(df, dt_column, identifiers, windows)
     df = offensive_efficiency_process(df, identifiers)
     df = margin_process(df, identifiers)
@@ -61,5 +62,7 @@ def process(
     df = remove_process(df, identifiers)
     if use_players_feature:
         df = players_process(df, identifiers)
-    df = reduce_process(_reduce_memory_usage(df.dropna(axis=1, how="all")))
+    df = reduce_process(
+        _reduce_memory_usage(df.dropna(axis=1, how="all")), original_columns
+    )
     return df
