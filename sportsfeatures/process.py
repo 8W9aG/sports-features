@@ -17,7 +17,6 @@ from .news_process import news_process
 from .offensive_efficiency_process import offensive_efficiency_process
 from .ordinal_process import ordinal_process
 from .players_process import players_process
-from .reduce_process import reduce_process
 from .remove_process import remove_process
 from .skill_process import skill_process
 from .timeseries_process import timeseries_process
@@ -45,7 +44,6 @@ def process(
     use_players_feature: bool = False,
 ) -> pd.DataFrame:
     """Process the dataframe for sports features."""
-    original_columns = set(df.columns.values.tolist())
     df = skill_process(df, dt_column, identifiers, windows)
     df = offensive_efficiency_process(df, identifiers)
     df = margin_process(df, identifiers)
@@ -62,7 +60,4 @@ def process(
     df = remove_process(df, identifiers)
     if use_players_feature:
         df = players_process(df, identifiers)
-    df = reduce_process(
-        _reduce_memory_usage(df.dropna(axis=1, how="all")), original_columns
-    )
-    return df
+    return _reduce_memory_usage(df.dropna(axis=1, how="all"))
