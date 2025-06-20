@@ -60,4 +60,4 @@ def process(
     df = remove_process(df, identifiers)
     if use_players_feature:
         df = players_process(df, identifiers)
-    return _reduce_memory_usage(df.dropna(axis=1, how="all"))
+    return _reduce_memory_usage(df)
