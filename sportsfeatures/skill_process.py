@@ -14,6 +14,7 @@ from .cache import MEMORY, create_cache, find_best_cache
 from .columns import DELIMITER
 from .entity_type import EntityType
 from .identifier import Identifier
+from .null_check import is_null
 from .windowed_rating import WindowedRating
 
 SKILL_COLUMN_PREFIX = "skill"
@@ -46,7 +47,7 @@ def _calculate_skills(
             if team_identifier.column not in row:
                 continue
             team_id = row[team_identifier.column]
-            if pd.isnull(team_id):
+            if is_null(team_id):
                 continue
             if team_id in team_result:
                 rating, ranking, prob = team_result[team_id]
@@ -61,7 +62,7 @@ def _calculate_skills(
                 if player_identifier.column not in row:
                     continue
                 player_id = row[player_identifier.column]
-                if pd.isnull(player_id):
+                if is_null(player_id):
                     continue
                 if player_id in player_result:
                     rating, ranking, prob = team_result[team_id]

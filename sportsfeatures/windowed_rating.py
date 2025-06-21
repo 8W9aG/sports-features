@@ -11,6 +11,7 @@ from openskill.models import PlackettLuce, PlackettLuceRating
 
 from .identifier import Identifier
 from .match import Match
+from .null_check import is_null
 from .team import Team
 
 _STATE_FILE = "state.json"
@@ -64,7 +65,7 @@ class WindowedRating:
             if team_identifier.column not in row:
                 continue
             team_id = row[team_identifier.column]
-            if pd.isnull(team_id):
+            if is_null(team_id):
                 continue
             if team_id not in self._team_ratings:
                 self._team_ratings[team_id] = self._team_model.rating(name=team_id)
@@ -76,14 +77,14 @@ class WindowedRating:
                 if player_identifier.team_identifier_column not in row:
                     continue
                 player_team_id = row[player_identifier.team_identifier_column]
-                if pd.isnull(player_team_id):
+                if is_null(player_team_id):
                     continue
                 if player_team_id != team_id:
                     continue
                 if player_identifier.column not in row:
                     continue
                 player_id = row[player_identifier.column]
-                if pd.isnull(player_id):
+                if is_null(player_id):
                     continue
                 team_player_ids.append(player_id)
                 if player_id not in self._player_ratings:

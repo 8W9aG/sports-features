@@ -17,6 +17,7 @@ from tqdm import tqdm
 from .columns import DELIMITER
 from .entity_type import EntityType
 from .identifier import Identifier
+from .null_check import is_null
 
 _COLUMN_PREFIX_COLUMN = "_column_prefix"
 
@@ -56,7 +57,7 @@ def _extract_identifier_timeseries(
             if identifier.column not in row:
                 continue
             identifier_id = row[identifier.column]
-            if pd.isnull(identifier_id):
+            if is_null(identifier_id):
                 continue
             key = DELIMITER.join([identifier.entity_type, identifier_id])
             identifier_df = identifier_ts.get(key, pd.DataFrame())
@@ -68,7 +69,7 @@ def _extract_identifier_timeseries(
                 if feature_column not in row:
                     continue
                 value = row[feature_column]
-                if pd.isnull(value):
+                if is_null(value):
                     continue
                 column = feature_column[len(identifier.column_prefix) :]
                 if not column:

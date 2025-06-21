@@ -6,6 +6,7 @@ from tqdm import tqdm
 
 from .columns import DELIMITER
 from .identifier import Identifier
+from .null_check import is_null
 
 OFFENSIVE_EFFICIENCY_COLUMN = "offensiveefficiency"
 
@@ -28,7 +29,7 @@ def offensive_efficiency_process(
             if identifier.field_goals_column not in row_dict:
                 continue
             field_goals_value = row_dict[identifier.field_goals_column]
-            if pd.isnull(field_goals_value):
+            if is_null(field_goals_value):
                 continue
             field_goals = float(field_goals_value)
             if identifier.assists_column is None:
@@ -36,7 +37,7 @@ def offensive_efficiency_process(
             if identifier.assists_column not in row_dict:
                 continue
             assists_value = row_dict[identifier.assists_column]
-            if pd.isnull(assists_value):
+            if is_null(assists_value):
                 continue
             assists = float(assists_value)
             if identifier.field_goals_attempted_column is None:
@@ -46,7 +47,7 @@ def offensive_efficiency_process(
             field_goals_attempted_value = row_dict[
                 identifier.field_goals_attempted_column
             ]
-            if pd.isnull(field_goals_attempted_value):
+            if is_null(field_goals_attempted_value):
                 continue
             field_goals_attempted = float(field_goals_attempted_value)
             if identifier.offensive_rebounds_column is None:
@@ -54,7 +55,7 @@ def offensive_efficiency_process(
             if identifier.offensive_rebounds_column not in row_dict:
                 continue
             offensive_rebounds_value = row_dict[identifier.offensive_rebounds_column]
-            if pd.isnull(offensive_rebounds_value):
+            if is_null(offensive_rebounds_value):
                 continue
             offensive_rebounds = float(offensive_rebounds_value)
             if identifier.turnovers_column is None:
@@ -62,7 +63,7 @@ def offensive_efficiency_process(
             if identifier.turnovers_column not in row_dict:
                 continue
             turnovers_value = row_dict[identifier.turnovers_column]
-            if pd.isnull(turnovers_value):
+            if is_null(turnovers_value):
                 continue
             turnovers = float(turnovers_value)
             offensive_efficiency_column = DELIMITER.join(

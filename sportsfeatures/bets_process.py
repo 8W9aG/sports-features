@@ -9,6 +9,7 @@ from tqdm import tqdm
 
 from .columns import DELIMITER
 from .identifier import Identifier
+from .null_check import is_null
 
 
 def _force_utc_aware(series, timezone="UTC"):
@@ -61,16 +62,16 @@ def bet_process(
                 if bet.odds_column not in row or bet.bookie_id_column not in row:
                     continue
                 odds = row[bet.odds_column]
-                if pd.isnull(odds):
+                if is_null(odds):
                     continue
                 bookie_id = row[bet.bookie_id_column]
-                if pd.isnull(bookie_id):
+                if is_null(bookie_id):
                     continue
                 if bet.dt_column is None or bet.dt_column not in row:
                     dt = game_dt - datetime.timedelta(hours=1)
                 else:
                     dt = pd.to_datetime(row[bet.dt_column])
-                    if pd.isnull(dt):
+                    if is_null(dt):
                         dt = game_dt - datetime.timedelta(hours=1)
                 try:
                     dt = pd.Timestamp(dt).tz_localize("UTC")
@@ -80,7 +81,7 @@ def bet_process(
                     continue
                 if bet.canonical_column in row:
                     canonical = row[bet.canonical_column]
-                    if not pd.isnull(canonical) and canonical:
+                    if not is_null(canonical) and canonical:
                         final_odds = odds
                 odds_data.append(odds)
                 bookies_data.append(bookie_id)
@@ -208,7 +209,7 @@ def bet_process(
             local_bookie_odds.append(1.0 / final_odds)
 
             points = row[identifier.points_column]
-            if pd.isnull(points):
+            if is_null(points):
                 continue
             local_points.append(points)
 
