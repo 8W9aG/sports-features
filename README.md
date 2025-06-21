@@ -22,6 +22,8 @@ Python 3.11.6:
 - [timeseries-features](https://github.com/8W9aG/timeseries-features)
 - [textfeats](https://github.com/8W9aG/text-features)
 - [scipy](https://scipy.org/)
+- [image-features](https://github.com/8W9aG/image-features)
+- [requests-cache](https://requests-cache.readthedocs.io/en/stable/)
 
 ## Raison D'être :thought_balloon:
 

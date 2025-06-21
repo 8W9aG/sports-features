@@ -10,3 +10,5 @@ joblib>=1.4.2
 timeseriesfeatures>=0.0.17
 textfeats>=0.1.4
 scipy>=1.15.2
+imagefeatures>=0.0.1
+requests-cache>=1.2.1

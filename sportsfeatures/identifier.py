@@ -29,6 +29,7 @@ class Identifier:
         longitude_column: str | None = None,
         news: list[News] | None = None,
         birth_date_column: str | None = None,
+        image_columns: list[str] | None = None,
     ):
         self.entity_type = entity_type
         self.column = column
@@ -46,6 +47,7 @@ class Identifier:
         self.longitude_column = longitude_column
         self.news = news if news is not None else []
         self.birth_date_column = birth_date_column
+        self.image_columns = image_columns if image_columns is not None else []
 
     @property
     def columns(self) -> list[str]:

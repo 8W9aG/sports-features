@@ -4,6 +4,7 @@
 import datetime
 
 import pandas as pd
+import requests_cache
 import tqdm
 
 from .bets_process import bet_process
@@ -11,6 +12,7 @@ from .datetime_process import datetime_process
 from .datetimesub_process import datetimesub_process
 from .distance_process import distance_process
 from .identifier import Identifier
+from .image_process import image_process
 from .lastplayed_process import lastplayed_process
 from .margin_process import margin_process
 from .news_process import news_process
@@ -42,8 +44,16 @@ def process(
     use_news_features: bool = True,
     datetime_columns: set[str] | None = None,
     use_players_feature: bool = False,
+    session: requests_cache.CachedSession | None = None,
 ) -> pd.DataFrame:
     """Process the dataframe for sports features."""
+    if session is None:
+        session = requests_cache.CachedSession(
+            "imagefeatures",
+            expire_after=requests_cache.NEVER_EXPIRE,
+            allowable_methods=("GET", "HEAD", "POST"),
+            stale_if_error=True,
+        )
     df = skill_process(df, dt_column, identifiers, windows)
     df = offensive_efficiency_process(df, identifiers)
     df = margin_process(df, identifiers)
@@ -56,6 +66,7 @@ def process(
     df = lastplayed_process(df, identifiers, dt_column)
     if use_news_features:
         df = news_process(df, identifiers)
+    df = image_process(df, identifiers, session)
     df = ordinal_process(df, categorical_features)
     df = remove_process(df, identifiers)
     if use_players_feature:
