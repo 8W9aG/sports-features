@@ -5,8 +5,8 @@
 import datetime
 import json
 import os
+from typing import Any
 
-import pandas as pd
 from openskill.models import PlackettLuce, PlackettLuceRating
 
 from .identifier import Identifier
@@ -52,7 +52,7 @@ class WindowedRating:
 
     def add(
         self,
-        row: pd.Series,
+        row: dict[str, Any],
         team_identifiers: list[Identifier],
         player_identifiers: list[Identifier],
     ) -> tuple[
@@ -100,7 +100,7 @@ class WindowedRating:
                 points = row[team_identifier.points_column]
             teams.append(Team(team_player_ids, points, team_id))
 
-        match = Match(teams, row[self._dt_column].to_pydatetime())
+        match = Match(teams, row[self._dt_column])
 
         if self.window is not None:
             # Remove older matches and reverse their results.
