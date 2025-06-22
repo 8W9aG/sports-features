@@ -9,3 +9,4 @@ class EntityType(StrEnum):
     PLAYER = auto()
     TEAM = auto()
     VENUE = auto()
+    COACH = auto()
