@@ -84,7 +84,6 @@ class TestPlayersProcess(unittest.TestCase):
             ),
         ]
         players_df = players_process(df, identifiers)
-        print(players_df)
         #players_df.to_parquet("players_df.parquet")
         expected_df = pd.read_parquet(os.path.join(self.dir, "players_df.parquet"))
         assert_frame_equal(players_df, expected_df)

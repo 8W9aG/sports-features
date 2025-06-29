@@ -10,3 +10,4 @@ class EntityType(StrEnum):
     TEAM = auto()
     VENUE = auto()
     COACH = auto()
+    OWNER = auto()
