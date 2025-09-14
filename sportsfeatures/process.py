@@ -1,7 +1,9 @@
 """The main process function."""
 
-# pylint: disable=too-many-arguments,too-many-positional-arguments
+# pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-statements
 import datetime
+import logging
+import time
 
 import pandas as pd
 import requests_cache
@@ -54,21 +56,81 @@ def process(
             allowable_methods=("GET", "HEAD", "POST"),
             stale_if_error=True,
         )
+    start_time = time.perf_counter()
     df = skill_process(df, dt_column, identifiers, windows)
+    end_time = time.perf_counter()
+    logging.info("Skill process time: %.6f", end_time - start_time)
+
+    start_time = time.perf_counter()
     df = offensive_efficiency_process(df, identifiers)
+    end_time = time.perf_counter()
+    logging.info("Offensive efficiency process time: %.6f", end_time - start_time)
+
+    start_time = time.perf_counter()
     df = margin_process(df, identifiers)
+    end_time = time.perf_counter()
+    logging.info("Margin process time: %.6f", end_time - start_time)
+
+    start_time = time.perf_counter()
     df = bet_process(df, identifiers, dt_column, use_bets_features)
+    end_time = time.perf_counter()
+    logging.info("Bet process time: %.6f", end_time - start_time)
+
+    start_time = time.perf_counter()
     df = datetimesub_process(df, dt_column, identifiers, datetime_columns)
+    end_time = time.perf_counter()
+    logging.info("Datetimesub process time: %.6f", end_time - start_time)
+
+    start_time = time.perf_counter()
     df = win_process(df, identifiers)
+    end_time = time.perf_counter()
+    logging.info("Win process time: %.6f", end_time - start_time)
+
+    start_time = time.perf_counter()
     df = timeseries_process(df, identifiers, windows, dt_column)
+    end_time = time.perf_counter()
+    logging.info("Timeseries process time: %.6f", end_time - start_time)
+
+    start_time = time.perf_counter()
     df = datetime_process(df, dt_column, datetime_columns)
+    end_time = time.perf_counter()
+    logging.info("Datetime process time: %.6f", end_time - start_time)
+
+    start_time = time.perf_counter()
     df = distance_process(df, identifiers)
+    end_time = time.perf_counter()
+    logging.info("Distance process time: %.6f", end_time - start_time)
+
+    start_time = time.perf_counter()
     df = lastplayed_process(df, identifiers, dt_column)
+    end_time = time.perf_counter()
+    logging.info("Lastplayed process time: %.6f", end_time - start_time)
+
     if use_news_features:
+        start_time = time.perf_counter()
         df = news_process(df, identifiers)
+        end_time = time.perf_counter()
+        logging.info("News process time: %.6f", end_time - start_time)
+
+    start_time = time.perf_counter()
     df = image_process(df, identifiers, session)
+    end_time = time.perf_counter()
+    logging.info("Image process time: %.6f", end_time - start_time)
+
+    start_time = time.perf_counter()
     df = ordinal_process(df, categorical_features)
+    end_time = time.perf_counter()
+    logging.info("Ordinal process time: %.6f", end_time - start_time)
+
+    start_time = time.perf_counter()
     df = remove_process(df, identifiers)
+    end_time = time.perf_counter()
+    logging.info("Remove process time: %.6f", end_time - start_time)
+
     if use_players_feature:
+        start_time = time.perf_counter()
         df = players_process(df, identifiers)
+        end_time = time.perf_counter()
+        logging.info("Players process time: %.6f", end_time - start_time)
+
     return _reduce_memory_usage(df)

@@ -21,6 +21,8 @@ def datetime_process(
             continue
         df[col] = pd.to_datetime(df[col])
     for col in cols:
+        if col not in df_cols:
+            continue
         try:
             dtf = DatetimeFeatures(
                 variables=[col],  # type: ignore
