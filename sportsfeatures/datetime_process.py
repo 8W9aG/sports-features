@@ -12,10 +12,13 @@ def datetime_process(
 ) -> pd.DataFrame:
     """Process datetime features."""
     simplefilter(action="ignore", category=pd.errors.PerformanceWarning)
+    df_cols = set(df.columns.values.tolist())
     cols = [dt_column]
     if datetime_columns is not None:
         cols.extend(datetime_columns)
     for col in cols:
+        if col not in df_cols:
+            continue
         df[col] = pd.to_datetime(df[col])
     for col in cols:
         try:
