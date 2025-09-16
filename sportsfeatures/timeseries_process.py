@@ -89,6 +89,7 @@ def _process_identifier_ts(
     identifier_ts: dict[str, pd.DataFrame],
     windows: list[datetime.timedelta | None],
     dt_column: str,
+    use_multiprocessing: bool,
 ) -> dict[str, pd.DataFrame]:
     # pylint: disable=too-many-locals
     features = [
@@ -126,14 +127,24 @@ def _process_identifier_ts(
         )
         for x in windows
     ]
-    with multiprocessing.Pool() as pool:
-        for identifier_id, identifier_df, column_prefix_series in pool.starmap(
-            _pool_process,
-            tqdm(
-                [(k, v, features, dt_column) for k, v in identifier_ts.items()],
-                desc="Timeseries Processing",
-            ),
-        ):
+    if use_multiprocessing:
+        with multiprocessing.Pool() as pool:
+            for identifier_id, identifier_df, column_prefix_series in pool.starmap(
+                _pool_process,
+                tqdm(
+                    [(k, v, features, dt_column) for k, v in identifier_ts.items()],
+                    desc="Timeseries Processing",
+                ),
+            ):
+                identifier_ts[identifier_id] = identifier_df
+                identifier_ts[identifier_id][_COLUMN_PREFIX_COLUMN] = (
+                    column_prefix_series
+                )
+    else:
+        for k, v in tqdm(identifier_ts.items(), desc="Timeseries Processing"):
+            identifier_id, identifier_df, column_prefix_series = _pool_process(
+                k, v, features, dt_column
+            )
             identifier_ts[identifier_id] = identifier_df
             identifier_ts[identifier_id][_COLUMN_PREFIX_COLUMN] = column_prefix_series
 
@@ -176,6 +187,7 @@ def timeseries_process(
     identifiers: list[Identifier],
     windows: list[datetime.timedelta | None],
     dt_column: str,
+    use_multiprocessing: bool,
 ) -> pd.DataFrame:
     """Process a dataframe for its timeseries features."""
     # pylint: disable=too-many-locals,consider-using-dict-items,too-many-statements,duplicate-code
@@ -188,6 +200,8 @@ def timeseries_process(
     identifier_ts: dict[str, pd.DataFrame] = _extract_identifier_timeseries(
         df, identifiers, dt_column
     )
-    identifier_ts = _process_identifier_ts(identifier_ts, windows, dt_column)
+    identifier_ts = _process_identifier_ts(
+        identifier_ts, windows, dt_column, use_multiprocessing
+    )
     df = _write_ts_features(df, identifier_ts, dt_column)
     return df.drop(columns=[_COLUMN_PREFIX_COLUMN]).copy()

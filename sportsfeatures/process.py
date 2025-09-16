@@ -47,6 +47,7 @@ def process(
     datetime_columns: set[str] | None = None,
     use_players_feature: bool = False,
     session: requests_cache.CachedSession | None = None,
+    use_multiprocessing: bool = True,
 ) -> pd.DataFrame:
     """Process the dataframe for sports features."""
     if session is None:
@@ -87,7 +88,7 @@ def process(
     logging.info("Win process time: %.6f", end_time - start_time)
 
     start_time = time.perf_counter()
-    df = timeseries_process(df, identifiers, windows, dt_column)
+    df = timeseries_process(df, identifiers, windows, dt_column, use_multiprocessing)
     end_time = time.perf_counter()
     logging.info("Timeseries process time: %.6f", end_time - start_time)
 

@@ -69,7 +69,7 @@ class TestTimeseriesProcess(unittest.TestCase):
                 _COLUMN_PREFIX_COLUMN: ["/teams/0", "/teams/0", "/teams/0"]
             })
         }
-        identifier_ts = _process_identifier_ts(identifier_ts, [datetime.timedelta(days=20), None], dt_column)
+        identifier_ts = _process_identifier_ts(identifier_ts, [datetime.timedelta(days=20), None], dt_column, True)
         test_df = pd.DataFrame(data={
             "/kicks_transform_none_count_20days": [None, 1.0, 2.0],
             "/kicks_transform_none_count_all": [None, 1.0, 2.0],
@@ -126,7 +126,7 @@ class TestTimeseriesProcess(unittest.TestCase):
                 ],
             })
         }
-        identifier_ts = _process_identifier_ts(identifier_ts, [datetime.timedelta(days=20), None], dt_column)
+        identifier_ts = _process_identifier_ts(identifier_ts, [datetime.timedelta(days=20), None], dt_column, True)
         print(identifier_ts)
 
     def test_all_nan_in_timeseries_process(self):
@@ -145,5 +145,5 @@ class TestTimeseriesProcess(unittest.TestCase):
                 ],
             })
         }
-        identifier_ts = _process_identifier_ts(identifier_ts, [datetime.timedelta(days=20), None], dt_column)
+        identifier_ts = _process_identifier_ts(identifier_ts, [datetime.timedelta(days=20), None], dt_column, True)
         print(identifier_ts)
