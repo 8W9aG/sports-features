@@ -3,6 +3,7 @@
 # pylint: disable=duplicate-code,too-many-locals,too-many-statements,too-many-branches,too-many-nested-blocks
 
 import datetime
+import logging
 
 import pandas as pd
 from tqdm import tqdm
@@ -28,8 +29,9 @@ def skill_process(
     windows: list[datetime.timedelta | None],
 ) -> pd.DataFrame:
     """Add skill features to the dataframe."""
+    logging.info("Starting skill processing")
     tqdm.pandas(desc="Skill Features")
-    df_dict = df.to_dict(orient="list")
+    df_dict: dict[str, list[float | None]] = {}
     df_cols = df.columns.values.tolist()
 
     team_identifiers = [x for x in identifiers if x.entity_type == EntityType.TEAM]
