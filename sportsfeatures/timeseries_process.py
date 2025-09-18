@@ -1,6 +1,6 @@
 """Processing for time series features."""
 
-# pylint: disable=duplicate-code,too-many-branches,too-many-nested-blocks
+# pylint: disable=duplicate-code,too-many-branches,too-many-nested-blocks,too-many-locals
 
 import datetime
 import multiprocessing
@@ -48,27 +48,28 @@ def _extract_identifier_timeseries(
     team_identifiers = [x for x in identifiers if x.entity_type == EntityType.TEAM]
     player_identifiers = [x for x in identifiers if x.entity_type == EntityType.PLAYER]
     relevant_identifiers = team_identifiers + player_identifiers
+    df_cols = df.columns.values.tolist()
 
-    def record_timeseries_features(row: pd.Series) -> pd.Series:
-        nonlocal identifier_ts
-        nonlocal relevant_identifiers
-
+    for row in tqdm(
+        df.itertuples(name=None), desc="Timeseries Progress", total=len(df)
+    ):
+        row_dict = {x: row[count + 1] for count, x in enumerate(df_cols)}
         for identifier in relevant_identifiers:
-            if identifier.column not in row:
+            if identifier.column not in row_dict:
                 continue
-            identifier_id = row[identifier.column]
+            identifier_id = row_dict[identifier.column]
             if is_null(identifier_id):
                 continue
             key = DELIMITER.join([identifier.entity_type, identifier_id])
             identifier_df = identifier_ts.get(key, pd.DataFrame())
-            identifier_df.loc[row.name, _COLUMN_PREFIX_COLUMN] = (  # type: ignore
+            identifier_df.loc[row[0], _COLUMN_PREFIX_COLUMN] = (  # type: ignore
                 identifier.column_prefix
             )
-            identifier_df.loc[row.name, dt_column] = row[dt_column]  # type: ignore
+            identifier_df.loc[row[0], dt_column] = row_dict[dt_column]  # type: ignore
             for feature_column in identifier.numeric_action_columns:
-                if feature_column not in row:
+                if feature_column not in row_dict:
                     continue
-                value = row[feature_column]
+                value = row_dict[feature_column]
                 if is_null(value):
                     continue
                 column = feature_column[len(identifier.column_prefix) :]
@@ -76,12 +77,9 @@ def _extract_identifier_timeseries(
                     continue
                 if column not in identifier_df:
                     identifier_df[column] = None
-                identifier_df.loc[row.name, column] = value  # type: ignore
+                identifier_df.loc[row[0], column] = value  # type: ignore
             identifier_ts[key] = identifier_df.infer_objects()
 
-        return row
-
-    df.progress_apply(record_timeseries_features, axis=1)  # type: ignore
     return identifier_ts
 
 
