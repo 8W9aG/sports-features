@@ -19,11 +19,11 @@ def news_process(df: pd.DataFrame, identifiers: list[Identifier]) -> pd.DataFram
         ]
         if not summary_cols:
             continue
-        news_df = process(df[summary_cols], True, {"injury"}).copy()
+        news_df = process(df[summary_cols], True, {"injury"})
         news_df = news_df.drop(columns=summary_cols, errors="ignore")
         for col in news_df.columns.values.tolist():
             df[DELIMITER.join([identifier.column_prefix, NEWS_COLUMN, col])] = news_df[
                 col
             ]
 
-    return df[sorted(df.columns.values.tolist())].copy()
+    return df[sorted(df.columns.values.tolist())]

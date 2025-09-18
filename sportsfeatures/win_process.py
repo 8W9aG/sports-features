@@ -80,4 +80,4 @@ def win_process(df: pd.DataFrame, identifiers: list[Identifier]) -> pd.DataFrame
         if col in written_columns:
             identifier.feature_columns.append(col)
 
-    return df[sorted(df.columns.values.tolist())].copy()
+    return df[sorted(df.columns.values.tolist())]

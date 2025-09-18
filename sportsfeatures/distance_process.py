@@ -136,4 +136,4 @@ def distance_process(df: pd.DataFrame, identifiers: list[Identifier]) -> pd.Data
     for column in written_columns:
         df.loc[:, column] = df_dict[column]
 
-    return df[sorted(df.columns.values.tolist())].copy()
+    return df[sorted(df.columns.values.tolist())]

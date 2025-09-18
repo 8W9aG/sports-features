@@ -29,4 +29,4 @@ def ordinal_process(df: pd.DataFrame, categorical_features: set[str]) -> pd.Data
             )
         except TypeError:
             pass
-    return df.copy()
+    return df

@@ -22,4 +22,4 @@ def image_process(
             image_cols,
             session,
         )
-    return df[sorted(df.columns.values.tolist())].copy()
+    return df[sorted(df.columns.values.tolist())]

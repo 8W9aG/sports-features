@@ -25,4 +25,4 @@ def remove_process(df: pd.DataFrame, identifiers: list[Identifier]) -> pd.DataFr
             drop_columns.add(news.published_column)
             drop_columns.add(news.summary_column)
             drop_columns.add(news.source_column)
-    return df.drop(columns=list(drop_columns), errors="ignore").copy()
+    return df.drop(columns=list(drop_columns), errors="ignore")

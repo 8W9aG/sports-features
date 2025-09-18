@@ -81,4 +81,4 @@ def players_process(df: pd.DataFrame, identifiers: list[Identifier]) -> pd.DataF
                 cols
             ].sem(axis=1)
 
-    return df[sorted(df.columns.values.tolist())].copy()
+    return df[sorted(df.columns.values.tolist())]

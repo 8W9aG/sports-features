@@ -28,14 +28,14 @@ def _pool_process(
     features: list[Feature],
     dt_column: str,
 ) -> tuple[str, pd.DataFrame, pd.Series]:
-    original_identifier_df = df.copy()
+    original_identifier_df = df
     drop_columns = df.columns.values.tolist()
     if "" in drop_columns:
         drop_columns.remove("")
     drop_columns.remove(_COLUMN_PREFIX_COLUMN)
     return (
         identifier_id,
-        process(df, features=features, on=dt_column).drop(columns=drop_columns).copy(),
+        process(df, features=features, on=dt_column).drop(columns=drop_columns),
         original_identifier_df[_COLUMN_PREFIX_COLUMN],
     )
 
@@ -202,4 +202,4 @@ def timeseries_process(
         identifier_ts, windows, dt_column, use_multiprocessing
     )
     df = _write_ts_features(df, identifier_ts, dt_column)
-    return df.drop(columns=[_COLUMN_PREFIX_COLUMN]).copy()
+    return df.drop(columns=[_COLUMN_PREFIX_COLUMN])
