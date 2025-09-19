@@ -1,16 +1,17 @@
 """Processing for time series features."""
 
-# pylint: disable=duplicate-code,too-many-branches,too-many-nested-blocks,too-many-locals
+# pylint: disable=duplicate-code,too-many-branches,too-many-nested-blocks,too-many-locals,redefined-outer-name,reimported,import-outside-toplevel
 
 import datetime
-import multiprocessing
+import os
+import tempfile
 from warnings import simplefilter
 
 import pandas as pd
+from joblib import Parallel, delayed  # type: ignore
 from timeseriesfeatures.feature import FEATURE_TYPE_LAG  # type: ignore
 from timeseriesfeatures.feature import (FEATURE_TYPE_ROLLING, VALUE_TYPE_DAYS,
                                         VALUE_TYPE_NONE, Feature)
-from timeseriesfeatures.process import process  # type: ignore
 from timeseriesfeatures.transform import Transform  # type: ignore
 from tqdm import tqdm
 
@@ -23,26 +24,27 @@ _COLUMN_PREFIX_COLUMN = "_column_prefix"
 
 
 def _pool_process(
-    identifier_id: str,
-    df: pd.DataFrame,
+    parquet_file: str,
     features: list[Feature],
     dt_column: str,
-) -> tuple[str, pd.DataFrame, pd.Series]:
-    original_identifier_df = df
+) -> None:
+    import pandas as pd
+    from timeseriesfeatures.process import process  # type: ignore
+
+    df = pd.read_parquet(parquet_file)
+    original_identifier_df = df.copy()
     drop_columns = df.columns.values.tolist()
     if "" in drop_columns:
         drop_columns.remove("")
-    drop_columns.remove(_COLUMN_PREFIX_COLUMN)
-    return (
-        identifier_id,
-        process(df, features=features, on=dt_column).drop(columns=drop_columns),
-        original_identifier_df[_COLUMN_PREFIX_COLUMN],
-    )
+    drop_columns.remove("_column_prefix")
+    df = process(df, features=features, on=dt_column).drop(columns=drop_columns)
+    df["_column_prefix"] = original_identifier_df["_column_prefix"]
+    df.to_parquet(parquet_file)
 
 
 def _extract_identifier_timeseries(
-    df: pd.DataFrame, identifiers: list[Identifier], dt_column: str
-) -> dict[str, pd.DataFrame]:
+    df: pd.DataFrame, identifiers: list[Identifier], dt_column: str, tmpdir: str
+) -> None:
     tqdm.pandas(desc="Timeseries Progress")
     identifier_ts: dict[str, pd.DataFrame] = {}
     team_identifiers = [x for x in identifiers if x.entity_type == EntityType.TEAM]
@@ -80,16 +82,16 @@ def _extract_identifier_timeseries(
                 identifier_df.loc[row[0], column] = value  # type: ignore
             identifier_ts[key] = identifier_df.infer_objects()
 
-    return identifier_ts
+    for k, v in identifier_ts.items():
+        v.to_parquet(os.path.join(tmpdir, f"{k}.parquet"))
 
 
 def _process_identifier_ts(
-    identifier_ts: dict[str, pd.DataFrame],
     windows: list[datetime.timedelta | None],
     dt_column: str,
     use_multiprocessing: bool,
-) -> dict[str, pd.DataFrame]:
-    # pylint: disable=too-many-locals
+    tmpdir: str,
+) -> None:
     features = [
         Feature(
             feature_type=FEATURE_TYPE_LAG,
@@ -125,41 +127,31 @@ def _process_identifier_ts(
         )
         for x in windows
     ]
+    parquet_files = [
+        os.path.join(tmpdir, x) for x in os.listdir(tmpdir) if x.endswith(".parquet")
+    ]
     if use_multiprocessing:
-        with multiprocessing.Pool() as pool:
-            for identifier_id, identifier_df, column_prefix_series in pool.starmap(
-                _pool_process,
-                tqdm(
-                    [(k, v, features, dt_column) for k, v in identifier_ts.items()],
-                    desc="Timeseries Processing",
-                ),
-            ):
-                identifier_ts[identifier_id] = identifier_df
-                identifier_ts[identifier_id][_COLUMN_PREFIX_COLUMN] = (
-                    column_prefix_series
-                )
+        Parallel(n_jobs=-1)(
+            delayed(_pool_process)(x, features, dt_column) for x in parquet_files
+        )
     else:
-        for k, v in tqdm(identifier_ts.items(), desc="Timeseries Processing"):
-            identifier_id, identifier_df, column_prefix_series = _pool_process(
-                k, v, features, dt_column
-            )
-            identifier_ts[identifier_id] = identifier_df
-            identifier_ts[identifier_id][_COLUMN_PREFIX_COLUMN] = column_prefix_series
-
-    return identifier_ts
+        for parquet_file in parquet_files:
+            _pool_process(parquet_file, features, dt_column)
 
 
 def _write_ts_features(
     df: pd.DataFrame,
-    identifier_ts: dict[str, pd.DataFrame],
     dt_column: str,
+    tmpdir: str,
 ) -> pd.DataFrame:
-    df_dict = df.to_dict(orient="list")
+    df_dict = {}
 
     written_columns = set()
-    for identifier_df in tqdm(
-        identifier_ts.values(), desc="Writing Timeseries Features"
+    for parquet_file in tqdm(
+        [os.path.join(tmpdir, x) for x in os.listdir(tmpdir) if x.endswith(".parquet")],
+        desc="Writing Timeseries Features",
     ):
+        identifier_df = pd.read_parquet(parquet_file)
         for row in identifier_df.itertuples(name=None):
             row_dict = {
                 x: row[count + 1]
@@ -188,18 +180,14 @@ def timeseries_process(
     use_multiprocessing: bool,
 ) -> pd.DataFrame:
     """Process a dataframe for its timeseries features."""
-    # pylint: disable=too-many-locals,consider-using-dict-items,too-many-statements,duplicate-code
-    tqdm.pandas(desc="Progress")
-    simplefilter(action="ignore", category=pd.errors.PerformanceWarning)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tqdm.pandas(desc="Progress")
+        simplefilter(action="ignore", category=pd.errors.PerformanceWarning)
 
-    # Write the columns to the dataframe ahead of time.
-    df[_COLUMN_PREFIX_COLUMN] = None
+        # Write the columns to the dataframe ahead of time.
+        df[_COLUMN_PREFIX_COLUMN] = None
 
-    identifier_ts: dict[str, pd.DataFrame] = _extract_identifier_timeseries(
-        df, identifiers, dt_column
-    )
-    identifier_ts = _process_identifier_ts(
-        identifier_ts, windows, dt_column, use_multiprocessing
-    )
-    df = _write_ts_features(df, identifier_ts, dt_column)
-    return df.drop(columns=[_COLUMN_PREFIX_COLUMN])
+        _extract_identifier_timeseries(df, identifiers, dt_column, tmpdir)
+        _process_identifier_ts(windows, dt_column, use_multiprocessing, tmpdir)
+        df = _write_ts_features(df, dt_column, tmpdir)
+        return df.drop(columns=[_COLUMN_PREFIX_COLUMN])

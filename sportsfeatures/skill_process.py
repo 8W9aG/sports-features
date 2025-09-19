@@ -178,4 +178,4 @@ def skill_process(
     for column in written_columns:
         df.loc[:, column] = df_dict[column]
 
-    return df[sorted(df.columns.values.tolist())].copy()
+    return df[sorted(df.columns.values.tolist())]
