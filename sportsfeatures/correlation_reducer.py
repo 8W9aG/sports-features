@@ -3,6 +3,7 @@
 # pylint: disable=too-many-locals,consider-using-enumerate
 
 import json
+import logging
 import os
 
 import numpy as np
@@ -100,14 +101,15 @@ def correlation_reducer(
     current_cols = set(_find_non_categorical_numeric_columns(df))
     if len(current_cols) < 10000:
         return df
+    drop_cols = set()
     if os.path.exists(_CORRELATION_REDUCER_FILE):
         with open(_CORRELATION_REDUCER_FILE, encoding="utf8") as handle:
             drop_cols = set(json.load(handle))
-            df = df.drop(columns=list(drop_cols & current_cols))
     else:
         drop_cols = set(_get_correlated_features_to_drop_chunked(df))
         drop_cols &= feature_cols
         with open(_CORRELATION_REDUCER_FILE, "w", encoding="utf8") as handle:
             json.dump(list(drop_cols), handle)
-        df = df.drop(columns=list(drop_cols))
+    logging.info("Dropped %d columns", len(drop_cols))
+    df = df.drop(columns=list(drop_cols))
     return df
