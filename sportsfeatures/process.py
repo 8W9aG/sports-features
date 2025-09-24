@@ -10,6 +10,7 @@ import requests_cache
 import tqdm
 
 from .bets_process import bet_process
+from .correlation_reducer import correlation_reducer
 from .datetime_process import datetime_process
 from .datetimesub_process import datetimesub_process
 from .distance_process import distance_process
@@ -48,6 +49,7 @@ def process(
     use_players_feature: bool = False,
     session: requests_cache.CachedSession | None = None,
     use_multiprocessing: bool = True,
+    reduce_input: bool = True,
 ) -> pd.DataFrame:
     """Process the dataframe for sports features."""
     if session is None:
@@ -57,6 +59,10 @@ def process(
             allowable_methods=("GET", "HEAD", "POST"),
             stale_if_error=True,
         )
+
+    if reduce_input:
+        df = correlation_reducer(df)
+
     start_time = time.perf_counter()
     df = skill_process(df, dt_column, identifiers, windows)
     end_time = time.perf_counter()
