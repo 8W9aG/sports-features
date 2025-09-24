@@ -8,6 +8,8 @@ import os
 import numpy as np
 import pandas as pd
 
+from .identifier import Identifier
+
 _CORRELATION_REDUCER_FILE = "sports-features-correlations.json"
 
 
@@ -86,8 +88,14 @@ def _get_correlated_features_to_drop_chunked(
     return sorted(to_drop_total)
 
 
-def correlation_reducer(df: pd.DataFrame) -> pd.DataFrame:
+def correlation_reducer(
+    df: pd.DataFrame, identifiers: list[Identifier]
+) -> pd.DataFrame:
     """Reduce dataframe by determining the correlation of numeric values."""
+    feature_cols = set()
+    for identifier in identifiers:
+        feature_cols |= set(identifier.feature_columns)
+
     df = df.dropna(axis=1, how="all")
     current_cols = set(_find_non_categorical_numeric_columns(df))
     if len(current_cols) < 10000:
@@ -98,6 +106,7 @@ def correlation_reducer(df: pd.DataFrame) -> pd.DataFrame:
             df = df.drop(columns=list(drop_cols & current_cols))
     else:
         drop_cols = set(_get_correlated_features_to_drop_chunked(df))
+        drop_cols &= feature_cols
         with open(_CORRELATION_REDUCER_FILE, "w", encoding="utf8") as handle:
             json.dump(list(drop_cols), handle)
         df = df.drop(columns=list(drop_cols))

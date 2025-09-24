@@ -61,7 +61,7 @@ def process(
         )
 
     if reduce_input:
-        df = correlation_reducer(df)
+        df = correlation_reducer(df, identifiers)
 
     start_time = time.perf_counter()
     df = skill_process(df, dt_column, identifiers, windows)
