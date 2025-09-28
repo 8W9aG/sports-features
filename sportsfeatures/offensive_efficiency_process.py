@@ -71,8 +71,11 @@ def offensive_efficiency_process(
             )
             if offensive_efficiency_column not in df_dict:
                 df_dict[offensive_efficiency_column] = [None for _ in range(len(df))]
-            df_dict[offensive_efficiency_column][row[0]] = (field_goals + assists) / (
+            denominator = (
                 field_goals_attempted - offensive_rebounds + assists + turnovers
+            )
+            df_dict[offensive_efficiency_column][row[0]] = (
+                (field_goals + assists) / denominator if denominator != 0.0 else 0.0
             )
             written_columns.add(offensive_efficiency_column)
 
