@@ -28,9 +28,12 @@ def _pool_process(
     features: list[Feature],
     dt_column: str,
 ) -> None:
+    from warnings import simplefilter
+
     import pandas as pd
     from timeseriesfeatures.process import process  # type: ignore
 
+    simplefilter(action="ignore", category=pd.errors.PerformanceWarning)
     df = pd.read_parquet(parquet_file)
     original_identifier_df = df.copy()
     drop_columns = df.columns.values.tolist()
@@ -132,7 +135,8 @@ def _process_identifier_ts(
     ]
     if use_multiprocessing:
         Parallel(n_jobs=-1)(
-            delayed(_pool_process)(x, features, dt_column) for x in parquet_files
+            delayed(_pool_process)(x, features, dt_column)
+            for x in tqdm(parquet_files, desc="Processing time series")
         )
     else:
         for parquet_file in parquet_files:
