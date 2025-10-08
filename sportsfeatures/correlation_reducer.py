@@ -90,7 +90,7 @@ def _get_correlated_features_to_drop_chunked(
 
 
 def correlation_reducer(
-    df: pd.DataFrame, identifiers: list[Identifier]
+    df: pd.DataFrame, identifiers: list[Identifier], threshold: float
 ) -> pd.DataFrame:
     """Reduce dataframe by determining the correlation of numeric values."""
     feature_cols = set()
@@ -106,7 +106,9 @@ def correlation_reducer(
         with open(_CORRELATION_REDUCER_FILE, encoding="utf8") as handle:
             drop_cols = set(json.load(handle))
     else:
-        drop_cols = set(_get_correlated_features_to_drop_chunked(df))
+        drop_cols = set(
+            _get_correlated_features_to_drop_chunked(df, threshold=threshold)
+        )
         drop_cols &= feature_cols
         with open(_CORRELATION_REDUCER_FILE, "w", encoding="utf8") as handle:
             json.dump(list(drop_cols), handle)

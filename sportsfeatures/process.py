@@ -50,6 +50,7 @@ def process(
     session: requests_cache.CachedSession | None = None,
     use_multiprocessing: bool = True,
     reduce_input: bool = True,
+    initial_correlation_threshold: float = 0.8,
 ) -> pd.DataFrame:
     """Process the dataframe for sports features."""
     if session is None:
@@ -61,7 +62,9 @@ def process(
         )
 
     if reduce_input:
-        df = correlation_reducer(df, identifiers)
+        df = correlation_reducer(
+            df, identifiers, threshold=initial_correlation_threshold
+        )
 
     start_time = time.perf_counter()
     df = skill_process(df, dt_column, identifiers, windows)
