@@ -82,4 +82,10 @@ def offensive_efficiency_process(
     for column in written_columns:
         df.loc[:, column] = df_dict[column]
 
+    # Add new feature columns
+    for identifier in identifiers:
+        col = DELIMITER.join([identifier.column_prefix, OFFENSIVE_EFFICIENCY_COLUMN])
+        if col in written_columns:
+            identifier.feature_columns.append(col)
+
     return df[sorted(df.columns.values.tolist())]
