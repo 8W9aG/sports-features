@@ -98,9 +98,7 @@ def correlation_reducer(
         feature_cols |= set(identifier.feature_columns)
 
     df = df.dropna(axis=1, how="all")
-    current_cols = set(_find_non_categorical_numeric_columns(df))
-    if len(current_cols) < 10000:
-        return df
+    # current_cols = set(_find_non_categorical_numeric_columns(df))
     drop_cols = set()
     if os.path.exists(_CORRELATION_REDUCER_FILE):
         with open(_CORRELATION_REDUCER_FILE, encoding="utf8") as handle:
